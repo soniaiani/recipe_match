@@ -1,0 +1,62 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.mobileprovision
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+.env/
+
+# Backend generated/cache data
+backend/.cache/
+backend/venv/
+backend/**/*.sqlite
+backend/**/*.sqlite3
+backend/**/*.db
+
+# Node / Expo
+node_modules/
+frontend/recipe-match/node_modules/
+frontend/recipe-match/.expo/
+frontend/recipe-match/dist/
+frontend/recipe-match/web-build/
+frontend/recipe-match/.metro-health-check*
+frontend/recipe-match/ios/
+frontend/recipe-match/android/
+
+# Build and logs
+dist/
+build/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+
+# Local editor/tooling state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+
+# Local generated evaluation outputs
+evaluation_results*.json
+backend/testari/evaluation_results*.json
+backend/testari/no_skip_user_results.json

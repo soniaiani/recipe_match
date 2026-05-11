@@ -1,0 +1,767 @@
+[
+  {
+    "step": 4,
+    "entropy_before": 6.983,
+    "asked_so_far": [
+      "cuisine",
+      "protein_type",
+      "meal_type"
+    ],
+    "candidates": [
+      {
+        "question_id": "has_cheese",
+        "eig": 1.2663,
+        "prevalence": 0.391,
+        "relevant_pool_size": 1204,
+        "selected": true
+      },
+      {
+        "question_id": "has_tortilla",
+        "eig": 1.2542,
+        "prevalence": 0.192,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_tomato_base",
+        "eig": 1.2519,
+        "prevalence": 0.355,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "is_spicy",
+        "eig": 1.2454,
+        "prevalence": 0.291,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_spicy_ingredient",
+        "eig": 1.2403,
+        "prevalence": 0.297,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "needs_oven",
+        "eig": 1.0397,
+        "prevalence": 0.409,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_beans_legumes",
+        "eig": 1.0079,
+        "prevalence": 0.184,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_cream_base",
+        "eig": 1.0,
+        "prevalence": 0.294,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "needs_stovetop",
+        "eig": 0.9544,
+        "prevalence": 0.727,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_rice",
+        "eig": 0.912,
+        "prevalence": 0.182,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_asian_sauce",
+        "eig": 0.7646,
+        "prevalence": 0.094,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_fruit",
+        "eig": 0.7594,
+        "prevalence": 0.139,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "is_quick",
+        "eig": 0.6878,
+        "prevalence": 0.146,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_leafy_greens",
+        "eig": 0.6774,
+        "prevalence": 0.156,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_potato",
+        "eig": 0.6432,
+        "prevalence": 0.169,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_broth_base",
+        "eig": 0.5943,
+        "prevalence": 0.177,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "is_sweet",
+        "eig": 0.571,
+        "prevalence": 0.047,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_pasta",
+        "eig": 0.4914,
+        "prevalence": 0.126,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_mushroom",
+        "eig": 0.4566,
+        "prevalence": 0.076,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_nuts",
+        "eig": 0.4323,
+        "prevalence": 0.084,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "is_no_cook",
+        "eig": 0.3912,
+        "prevalence": 0.007,
+        "relevant_pool_size": 1204,
+        "selected": false
+      },
+      {
+        "question_id": "has_chocolate",
+        "eig": 0.3495,
+        "prevalence": 0.002,
+        "relevant_pool_size": 1204,
+        "selected": false
+      }
+    ]
+  },
+  {
+    "step": 5,
+    "entropy_before": 6.216,
+    "asked_so_far": [
+      "has_cheese",
+      "cuisine",
+      "protein_type",
+      "meal_type"
+    ],
+    "candidates": [
+      {
+        "question_id": "has_tomato_base",
+        "eig": 1.2217,
+        "prevalence": 0.288,
+        "relevant_pool_size": 784,
+        "selected": true
+      },
+      {
+        "question_id": "is_spicy",
+        "eig": 1.2102,
+        "prevalence": 0.316,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_spicy_ingredient",
+        "eig": 1.2027,
+        "prevalence": 0.301,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_tortilla",
+        "eig": 1.091,
+        "prevalence": 0.154,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_beans_legumes",
+        "eig": 0.9644,
+        "prevalence": 0.198,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_rice",
+        "eig": 0.9634,
+        "prevalence": 0.204,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "needs_stovetop",
+        "eig": 0.8829,
+        "prevalence": 0.7,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "needs_oven",
+        "eig": 0.8381,
+        "prevalence": 0.325,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_asian_sauce",
+        "eig": 0.7827,
+        "prevalence": 0.138,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_cream_base",
+        "eig": 0.7823,
+        "prevalence": 0.194,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_fruit",
+        "eig": 0.7526,
+        "prevalence": 0.163,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "is_quick",
+        "eig": 0.625,
+        "prevalence": 0.154,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_broth_base",
+        "eig": 0.6159,
+        "prevalence": 0.188,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_potato",
+        "eig": 0.5928,
+        "prevalence": 0.191,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "is_sweet",
+        "eig": 0.5569,
+        "prevalence": 0.069,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_leafy_greens",
+        "eig": 0.5263,
+        "prevalence": 0.135,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_nuts",
+        "eig": 0.4428,
+        "prevalence": 0.105,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_mushroom",
+        "eig": 0.3649,
+        "prevalence": 0.06,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "is_no_cook",
+        "eig": 0.3475,
+        "prevalence": 0.01,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_chocolate",
+        "eig": 0.3114,
+        "prevalence": 0.001,
+        "relevant_pool_size": 784,
+        "selected": false
+      },
+      {
+        "question_id": "has_pasta",
+        "eig": 0.3028,
+        "prevalence": 0.059,
+        "relevant_pool_size": 784,
+        "selected": false
+      }
+    ]
+  },
+  {
+    "step": 6,
+    "entropy_before": 5.2606,
+    "asked_so_far": [
+      "meal_type",
+      "protein_type",
+      "has_tomato_base",
+      "has_cheese",
+      "cuisine"
+    ],
+    "candidates": [
+      {
+        "question_id": "is_spicy",
+        "eig": 1.184,
+        "prevalence": 0.242,
+        "relevant_pool_size": 594,
+        "selected": true
+      },
+      {
+        "question_id": "has_spicy_ingredient",
+        "eig": 1.1517,
+        "prevalence": 0.224,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_tortilla",
+        "eig": 1.0521,
+        "prevalence": 0.096,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "needs_stovetop",
+        "eig": 0.8856,
+        "prevalence": 0.67,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_beans_legumes",
+        "eig": 0.8844,
+        "prevalence": 0.15,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_asian_sauce",
+        "eig": 0.8683,
+        "prevalence": 0.143,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "needs_oven",
+        "eig": 0.8628,
+        "prevalence": 0.348,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_fruit",
+        "eig": 0.7842,
+        "prevalence": 0.163,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_cream_base",
+        "eig": 0.6912,
+        "prevalence": 0.16,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "is_quick",
+        "eig": 0.6823,
+        "prevalence": 0.172,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_potato",
+        "eig": 0.6771,
+        "prevalence": 0.209,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "is_sweet",
+        "eig": 0.665,
+        "prevalence": 0.081,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_rice",
+        "eig": 0.5384,
+        "prevalence": 0.197,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_nuts",
+        "eig": 0.4956,
+        "prevalence": 0.116,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_broth_base",
+        "eig": 0.4411,
+        "prevalence": 0.173,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_leafy_greens",
+        "eig": 0.4171,
+        "prevalence": 0.116,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "is_no_cook",
+        "eig": 0.3368,
+        "prevalence": 0.008,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_mushroom",
+        "eig": 0.3199,
+        "prevalence": 0.062,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_chocolate",
+        "eig": 0.2641,
+        "prevalence": 0.002,
+        "relevant_pool_size": 594,
+        "selected": false
+      },
+      {
+        "question_id": "has_pasta",
+        "eig": 0.2516,
+        "prevalence": 0.057,
+        "relevant_pool_size": 594,
+        "selected": false
+      }
+    ]
+  },
+  {
+    "step": 7,
+    "entropy_before": 4.0704,
+    "asked_so_far": [
+      "meal_type",
+      "protein_type",
+      "has_tomato_base",
+      "has_cheese",
+      "is_spicy",
+      "cuisine"
+    ],
+    "candidates": [
+      {
+        "question_id": "has_tortilla",
+        "eig": 1.0566,
+        "prevalence": 0.209,
+        "relevant_pool_size": 163,
+        "selected": true
+      },
+      {
+        "question_id": "has_asian_sauce",
+        "eig": 0.9484,
+        "prevalence": 0.233,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "needs_oven",
+        "eig": 0.9439,
+        "prevalence": 0.233,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "needs_stovetop",
+        "eig": 0.9264,
+        "prevalence": 0.798,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_beans_legumes",
+        "eig": 0.8726,
+        "prevalence": 0.301,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_potato",
+        "eig": 0.854,
+        "prevalence": 0.135,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_fruit",
+        "eig": 0.8033,
+        "prevalence": 0.19,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_spicy_ingredient",
+        "eig": 0.7757,
+        "prevalence": 0.742,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_cream_base",
+        "eig": 0.7223,
+        "prevalence": 0.221,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "is_quick",
+        "eig": 0.5794,
+        "prevalence": 0.19,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_broth_base",
+        "eig": 0.4831,
+        "prevalence": 0.215,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_rice",
+        "eig": 0.4308,
+        "prevalence": 0.264,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_leafy_greens",
+        "eig": 0.4291,
+        "prevalence": 0.178,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_mushroom",
+        "eig": 0.3271,
+        "prevalence": 0.08,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_nuts",
+        "eig": 0.2066,
+        "prevalence": 0.098,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "is_no_cook",
+        "eig": 0.206,
+        "prevalence": 0.006,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "is_sweet",
+        "eig": 0.2059,
+        "prevalence": 0.061,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_chocolate",
+        "eig": 0.2054,
+        "prevalence": 0.0,
+        "relevant_pool_size": 163,
+        "selected": false
+      },
+      {
+        "question_id": "has_pasta",
+        "eig": 0.201,
+        "prevalence": 0.031,
+        "relevant_pool_size": 163,
+        "selected": false
+      }
+    ]
+  },
+  {
+    "step": 8,
+    "entropy_before": 2.5046,
+    "asked_so_far": [
+      "meal_type",
+      "protein_type",
+      "has_tortilla",
+      "has_tomato_base",
+      "has_cheese",
+      "is_spicy",
+      "cuisine"
+    ],
+    "candidates": [
+      {
+        "question_id": "has_asian_sauce",
+        "eig": 0.8698,
+        "prevalence": 0.054,
+        "relevant_pool_size": 112,
+        "selected": true
+      },
+      {
+        "question_id": "has_spicy_ingredient",
+        "eig": 0.8119,
+        "prevalence": 0.696,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "needs_stovetop",
+        "eig": 0.6985,
+        "prevalence": 0.759,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "needs_oven",
+        "eig": 0.6768,
+        "prevalence": 0.286,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_cream_base",
+        "eig": 0.6466,
+        "prevalence": 0.312,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_fruit",
+        "eig": 0.6397,
+        "prevalence": 0.214,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_beans_legumes",
+        "eig": 0.5981,
+        "prevalence": 0.402,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "is_quick",
+        "eig": 0.5004,
+        "prevalence": 0.179,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_leafy_greens",
+        "eig": 0.4434,
+        "prevalence": 0.188,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_broth_base",
+        "eig": 0.399,
+        "prevalence": 0.179,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_rice",
+        "eig": 0.1416,
+        "prevalence": 0.232,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_potato",
+        "eig": 0.1403,
+        "prevalence": 0.08,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_mushroom",
+        "eig": 0.1301,
+        "prevalence": 0.027,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "is_no_cook",
+        "eig": 0.1263,
+        "prevalence": 0.054,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_pasta",
+        "eig": 0.1262,
+        "prevalence": 0.0,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_nuts",
+        "eig": 0.1262,
+        "prevalence": 0.018,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "has_chocolate",
+        "eig": 0.1262,
+        "prevalence": 0.0,
+        "relevant_pool_size": 112,
+        "selected": false
+      },
+      {
+        "question_id": "is_sweet",
+        "eig": 0.126,
+        "prevalence": 0.071,
+        "relevant_pool_size": 112,
+        "selected": false
+      }
+    ]
+  }
+]
