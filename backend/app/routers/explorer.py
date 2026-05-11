@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import math
 import json
 from statistics import mean
 from typing import Any, TypeVar
@@ -15,8 +15,20 @@ router = APIRouter(prefix="/explorer", tags=["explorer"])
 MAX_EXPAND_CANDIDATES = 250
 T = TypeVar("T")
 
+_LOG_K = math.log(15)  # Shifted PPMI, k=5 — Levy & Goldberg (2014)
+
+_PANTRY_HARD = {
+    "salt", "pepper", "black pepper", "water", "oil",
+    "olive oil", "vegetable oil", "cooking spray",
+}
+
+_PANTRY_SOFT = {
+    "sugar", "all-purpose flour", "butter", "milk", "egg",
+}
+
 _RECIPE_INGREDIENT_CACHE: list[tuple[dict[str, Any], set[str]]] | None = None
 _RECIPE_DETAIL_CACHE: list[tuple[dict[str, Any], set[str]]] | None = None
+_INGREDIENT_IDF: dict[str, float] = {}
 
 RECIPE_FIELDS = (
     "id,name,description,image_url,prep_time,cook_time,total_time,servings,"
@@ -176,6 +188,20 @@ def _recipe_detail_rows() -> list[tuple[dict[str, Any], set[str]]]:
 def warm_explorer_cache() -> None:
     _recipe_ingredient_rows()
 
+def warm_ingredient_idf() -> None:
+    global _INGREDIENT_IDF
+    admin = get_supabase_admin()
+    rows = (
+        admin.table("ingredient_stats")
+        .select("ingredient,recipe_count,total_recipes")
+        .execute()
+        .data or []
+    )
+    for row in rows:
+        idf = math.log(row["total_recipes"] / max(row["recipe_count"], 1))
+        _INGREDIENT_IDF[row["ingredient"]] = round(idf, 6)
+    print(f"[explorer] Loaded IDF for {len(_INGREDIENT_IDF)} ingredients.")
+
 
 def _matching_recipes(
     selected: list[str],
@@ -227,6 +253,20 @@ def _candidate_counts_from_matching(
     return dict(ranked[:MAX_EXPAND_CANDIDATES])
 
 
+def _filter_candidate_counts_by_context(
+    candidate_counts: dict[str, int],
+    min_count: int,
+    exclude_soft_pantry: bool,
+) -> dict[str, int]:
+    return {
+        ingredient: count
+        for ingredient, count in candidate_counts.items()
+        if count >= min_count
+        and ingredient not in _PANTRY_HARD
+        and (not exclude_soft_pantry or ingredient not in _PANTRY_SOFT)
+    }
+
+
 def _graph_suggestions(selected: list[str], selected_set: set[str]) -> list[ExplorerSuggestion]:
     admin = get_supabase_admin()
     rows_by_ingredient: dict[str, list[float]] = {}
@@ -261,7 +301,10 @@ def start_explorer(
 ) -> ApiResponse[ExplorerStartResponse]:
     ingredient = _normalize_ingredient(body.ingredient)
     if not ingredient:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ingredient is required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ingredient is required"
+        )
 
     admin = get_supabase_admin()
     stats = (
@@ -273,28 +316,51 @@ def start_explorer(
         .data or []
     )
     if not stats:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingredient not found")
-
-    graph_rows = (
-        admin.table("ingredient_graph")
-        .select("ingredient_b,ppmi_score")
-        .eq("ingredient_a", ingredient)
-        .order("ppmi_score", desc=True)
-        .limit(5)
-        .execute()
-        .data or []
-    )
-    suggestions = [
-        ExplorerSuggestion(
-            ingredient=row["ingredient_b"],
-            ppmi_score=float(row["ppmi_score"]),
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ingredient not found"
         )
-        for row in graph_rows
-    ]
+
+    selected = [ingredient]
+    selected_set = {ingredient}
+
+    matching, _ = _matching_recipes(selected, _recipe_ingredient_rows())
+
+    if not matching:
+        return ApiResponse(data=ExplorerStartResponse(
+            center=ingredient,
+            suggestions=[],
+            recipe_count=int(stats[0]["recipe_count"]),
+        ))
+
+    candidate_counts = _candidate_counts_from_matching(matching, selected_set)
+    candidate_counts = _filter_candidate_counts_by_context(
+        candidate_counts,
+        min_count=20,
+        exclude_soft_pantry=True,
+    )
+    ppmi_scores = _fetch_ppmi_scores(set(candidate_counts), selected)
+    n_matching = len(matching)
+
+    scored: list[ExplorerSuggestion] = []
+    for candidate, count in candidate_counts.items():
+        frequency_score = count / n_matching
+        idf = _INGREDIENT_IDF.get(candidate, 1.0)  # fallback 1.0 dacă lipsește
+        tfidf_score = frequency_score * idf
+        scores = ppmi_scores.get(candidate, [])
+        avg_ppmi = mean(scores) if scores else 0.0
+        shifted_ppmi = max(avg_ppmi - _LOG_K, 0.0)
+        final_score = (0.7 * tfidf_score) + (0.3 * shifted_ppmi)
+        scored.append(ExplorerSuggestion(
+            ingredient=candidate,
+            score=round(final_score, 6),
+        ))
+
+    scored.sort(key=lambda s: s.score or 0.0, reverse=True)
 
     return ApiResponse(data=ExplorerStartResponse(
         center=ingredient,
-        suggestions=suggestions,
+        suggestions=scored[:5],
         recipe_count=int(stats[0]["recipe_count"]),
     ))
 
@@ -326,16 +392,26 @@ def expand_explorer(
         ))
 
     candidate_counts = _candidate_counts_from_matching(matching, selected_set)
+    candidate_counts = _filter_candidate_counts_by_context(
+        candidate_counts,
+        min_count=5,
+        exclude_soft_pantry=False,
+    )
     ppmi_scores = _fetch_ppmi_scores(set(candidate_counts), selected)
     n_matching = len(matching)
     scored: list[ExplorerSuggestion] = []
     for candidate, count in candidate_counts.items():
         frequency_score = count / n_matching
+        idf = _INGREDIENT_IDF.get(candidate, 1.0)  # fallback 1.0 dacă lipsește
+        tfidf_score = frequency_score * idf
         scores = ppmi_scores.get(candidate, [])
         avg_ppmi = mean(scores) if scores else 0.0
-        final_score = (0.7 * frequency_score) + (0.3 * avg_ppmi)
-        scored.append(ExplorerSuggestion(ingredient=candidate, score=round(final_score, 6)))
-
+        shifted_ppmi = max(avg_ppmi - _LOG_K, 0.0)
+        final_score = (0.7 * tfidf_score) + (0.3 * shifted_ppmi)
+        scored.append(ExplorerSuggestion(
+            ingredient=candidate,
+            score=round(final_score, 6),
+        ))
     scored.sort(key=lambda item: item.score or 0.0, reverse=True)
     return ApiResponse(data=ExplorerExpandResponse(
         suggestions=scored[:5],

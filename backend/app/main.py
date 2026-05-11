@@ -61,6 +61,7 @@ async def _load_rec_engine() -> None:
         print(f"[startup] Loaded {len(app.state.rec_recipes)} recipes for Bayesian engine.")
 
         explorer.warm_explorer_cache()
+        explorer.warm_ingredient_idf()
         print("[startup] Warmed Ingredient Explorer cache.")
     except Exception as exc:
         app.state.rec_recipes = []

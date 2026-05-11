@@ -76,7 +76,7 @@ def fetch_all_recipes() -> list[dict[str, Any]]:
         if len(page) < 1000:
             break
         offset += 1000
-    return recipes
+    return recipescorectare_explorer
 
 
 def chunks(items: list[T], size: int):
