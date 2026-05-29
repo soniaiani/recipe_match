@@ -11,6 +11,8 @@ _SUMMARY_FIELDS = (
     "total_minutes,is_vegetarian,is_vegan,is_gluten_free,is_dairy_free,is_quick"
 )
 
+_SAVE_INTERACTION_WEIGHT = 2.0
+
 
 def _get_or_create_default_collection(user_id: str) -> str:
     """Return 'Saved' collection id, creating it if it doesn't exist."""
@@ -20,6 +22,18 @@ def _get_or_create_default_collection(user_id: str) -> str:
         return res.data[0]["id"]
     created = admin.table("collections").insert({"user_id": user_id, "name": "Saved"}).execute()
     return created.data[0]["id"]
+
+
+def _log_save_interaction(user_id: str, recipe_id: int) -> None:
+    try:
+        get_supabase_admin().table("recipe_interactions").insert({
+            "user_id": user_id,
+            "recipe_id": recipe_id,
+            "interaction_type": "save",
+            "weight": _SAVE_INTERACTION_WEIGHT,
+        }).execute()
+    except Exception as exc:
+        print(f"[saved] failed to log save interaction: {exc}")
 
 
 @router.post("", response_model=ApiResponse[SavedRecipe], status_code=status.HTTP_201_CREATED)
@@ -54,6 +68,8 @@ async def save_recipe(body: SaveRecipeRequest, user_id: str = Depends(get_user_i
                 ))
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Recipe already saved")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    _log_save_interaction(user_id, body.recipe_id)
 
     row = res.data[0]
     return ApiResponse(data=SavedRecipe(

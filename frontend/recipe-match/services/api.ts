@@ -268,12 +268,11 @@ export interface RecResultsResponse {
 }
 
 export const recommendationApi = {
-  start: (dietary?: DietaryProfile, semanticQuery?: string) =>
+  start: (dietary?: DietaryProfile) =>
     request<RecSessionStartResponse>('/recommendations/session/start', {
       method: 'POST',
       body: JSON.stringify({
         dietary: dietary ?? null,
-        semantic_query: semanticQuery?.trim() || null,
       }),
     }),
 
@@ -290,5 +289,10 @@ export const recommendationApi = {
     request<null>('/recommendations/interaction', {
       method: 'POST',
       body: JSON.stringify({ recipe_id, interaction_type }),
+    }),
+
+  deleteInteraction: (recipe_id: number, interaction_type: string) =>
+    request<null>(`/recommendations/interaction/${recipe_id}/${interaction_type}`, {
+      method: 'DELETE',
     }),
 };

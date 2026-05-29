@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, FlatList,
-  ScrollView, Dimensions, TextInput,
+  ScrollView, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -87,13 +87,6 @@ const QUESTION_HEADINGS: Record<string, string> = {
 };
 
 const SELECTION_QUESTION_IDS = new Set(['meal_type', 'protein_type', 'cuisine']);
-const CRAVING_SUGGESTIONS = [
-  'Creamy pasta',
-  'Spicy soup',
-  'Fresh salad',
-  'Chocolate dessert',
-  'Quick dinner',
-];
 
 function optionLabel(questionId: string, value: string): string {
   return OPTION_LABELS[questionId]?.[value] ?? value.replace(/_/g, ' ');
@@ -197,15 +190,10 @@ export default function FindScreen() {
 
   const [selected, setSelected] = useState<string[]>([]);
   const [cardKey, setCardKey] = useState(0);
-  const [semanticQuery, setSemanticQuery] = useState('');
 
   const handleStart = () => {
     setSelected([]);
-    startSession(user?.dietary, semanticQuery);
-  };
-
-  const handleSuggestionPress = (value: string) => {
-    setSemanticQuery(value);
+    startSession(user?.dietary);
   };
 
   const handleOptionPress = (value: string, question: RecQuestion) => {
@@ -250,41 +238,8 @@ export default function FindScreen() {
           <Text style={styles.heroKicker}>Smart picker</Text>
           <Text style={styles.heroTitle}>Find the right recipe</Text>
           <Text style={styles.heroSubtitle}>
-            Describe a dish, ingredient, or mood, then answer a few quick questions.
+            Answer a few quick questions so we can narrow down recipes by your explicit preferences.
           </Text>
-          <View style={styles.cravingBox}>
-            <Text style={styles.cravingLabel}>What are you craving?</Text>
-            <TextInput
-              value={semanticQuery}
-              onChangeText={setSemanticQuery}
-              placeholder="Creamy chicken pasta, spicy soup..."
-              placeholderTextColor={Colors.textTertiary}
-              style={styles.cravingInput}
-              returnKeyType="done"
-              maxLength={120}
-            />
-            <View style={styles.suggestionRow}>
-              {CRAVING_SUGGESTIONS.map(item => (
-                <Pressable
-                  key={item}
-                  style={[
-                    styles.suggestionChip,
-                    semanticQuery === item && styles.suggestionChipActive,
-                  ]}
-                  onPress={() => handleSuggestionPress(item)}
-                >
-                  <Text
-                    style={[
-                      styles.suggestionText,
-                      semanticQuery === item && styles.suggestionTextActive,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
           <Pressable style={styles.startBtn} onPress={handleStart}>
             <Text style={styles.startBtnText}>Start search</Text>
             <Ionicons name="arrow-forward" size={18} color={Colors.textInverse} />
@@ -537,57 +492,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     maxWidth: 340,
   },
-  cravingBox: {
-    width: '100%',
-    maxWidth: 380,
-    marginTop: 24,
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    backgroundColor: Colors.surface,
-  },
-  cravingLabel: {
-    fontSize: 13,
-    color: Colors.textPrimary,
-    fontWeight: '900',
-    marginBottom: 10,
-  },
-  cravingInput: {
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceMuted,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: Colors.textPrimary,
-    fontWeight: '700',
-  },
-  suggestionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  suggestionChip: {
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    backgroundColor: Colors.surfaceElevated,
-  },
-  suggestionChipActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarySoft,
-  },
-  suggestionText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '800',
-  },
-  suggestionTextActive: { color: Colors.primaryDark },
   startBtn: {
     marginTop: 24,
     backgroundColor: Colors.primary,

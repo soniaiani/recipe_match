@@ -11,7 +11,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { GraphCanvas } from '@/components/explorer/GraphCanvas';
 import { ExplorerResults } from '@/components/explorer/ExplorerResults';
 import {
-  ExplorerRecipe, Suggestion, explorerApi,
+  ExplorerRecipe, Suggestion, createExplorerSessionId, explorerApi,
 } from '@/services/explorerApi';
 
 type ExplorerState = 'SEARCH' | 'EXPLORING' | 'RESULTS';
@@ -29,6 +29,7 @@ export default function IngredientExplorerScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchSeq = useRef(0);
+  const explorerSessionId = useRef<string | null>(null);
 
   useEffect(() => {
     const query = inputValue.trim();
@@ -60,6 +61,7 @@ export default function IngredientExplorerScreen() {
   const startWithIngredient = async (ingredient: string) => {
     setLoading(true);
     setError(null);
+    explorerSessionId.current = createExplorerSessionId();
     try {
       const res = await explorerApi.start(ingredient);
       setCenter(res.center);
@@ -81,7 +83,7 @@ export default function IngredientExplorerScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await explorerApi.expand(nextChain);
+      const res = await explorerApi.expand(nextChain, explorerSessionId.current);
       setCenter(ingredient);
       setSelectedChain(nextChain);
       setSuggestions(res.suggestions);
@@ -99,7 +101,7 @@ export default function IngredientExplorerScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await explorerApi.recommend(selectedChain);
+      const res = await explorerApi.recommend(selectedChain, explorerSessionId.current);
       setResults(res.recipes);
       setRecipeCount(res.recipe_count);
       setRelaxed(res.relaxed);
@@ -123,6 +125,7 @@ export default function IngredientExplorerScreen() {
     setCenter('');
     setSuggestions([]);
     setSelectedChain([]);
+    explorerSessionId.current = null;
     setRecipeCount(0);
     setRelaxed(false);
   };

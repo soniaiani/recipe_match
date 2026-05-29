@@ -24,6 +24,8 @@ _REC_RECIPE_FIELDS = (
     "has_tortilla,has_spicy_ingredient,has_asian_sauce"
 )
 
+_FYP_CLUSTER_MODEL_VERSION = "pantry_downweighted_hybrid_c_pca25_k180_seed42_v1"
+
 app = FastAPI(
     title="Recipe Match API",
     version="1.0.0",
@@ -60,12 +62,59 @@ async def _load_rec_engine() -> None:
         app.state.rec_weights = compute_feature_mi(app.state.rec_recipes)
         print(f"[startup] Loaded {len(app.state.rec_recipes)} recipes for Bayesian engine.")
 
+        try:
+            from app.recommender.embeddings import encode_text
+
+            encode_text("warmup recipe preferences")
+            print("[startup] Warmed semantic embedding model.")
+        except Exception as exc:
+            print(f"[startup] WARNING: failed to warm embedding model: {exc}")
+
         explorer.warm_explorer_cache()
         explorer.warm_ingredient_idf()
+        explorer.warm_explorer_ltr_model()
         print("[startup] Warmed Ingredient Explorer cache.")
+
+        try:
+            cluster_rows = []
+            cluster_offset = 0
+            while True:
+                page = (
+                    admin.table("recipe_clusters")
+                    .select("recipe_id,cluster_id")
+                    .eq("model_version", _FYP_CLUSTER_MODEL_VERSION)
+                    .range(cluster_offset, cluster_offset + 999)
+                    .execute()
+                    .data or []
+                )
+                cluster_rows.extend(page)
+                if len(page) < 1000:
+                    break
+                cluster_offset += 1000
+
+            app.state.recipe_clusters = {
+                int(row["recipe_id"]): int(row["cluster_id"])
+                for row in cluster_rows
+                if row.get("recipe_id") is not None and row.get("cluster_id") is not None
+            }
+            app.state.recipe_cluster_model_version = _FYP_CLUSTER_MODEL_VERSION
+            app.state.cluster_aware_fyp = bool(app.state.recipe_clusters)
+            print(
+                "[startup] Loaded "
+                f"{len(app.state.recipe_clusters)} recipe clusters for FYP "
+                f"model={_FYP_CLUSTER_MODEL_VERSION}."
+            )
+        except Exception as exc:
+            app.state.recipe_clusters = {}
+            app.state.recipe_cluster_model_version = None
+            app.state.cluster_aware_fyp = False
+            print(f"[startup] WARNING: failed to load FYP recipe clusters: {exc}")
     except Exception as exc:
         app.state.rec_recipes = []
         app.state.rec_weights = {}
+        app.state.recipe_clusters = {}
+        app.state.recipe_cluster_model_version = None
+        app.state.cluster_aware_fyp = False
         print(f"[startup] WARNING: failed to load Bayesian engine data: {exc}")
 
 app.state.limiter = limiter

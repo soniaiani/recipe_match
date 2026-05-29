@@ -1,3 +1,8 @@
+"""Legacy semantic reranking helpers.
+
+The active Find flow no longer uses free-text semantic queries. This module is
+kept for historical evaluation scripts and possible future experiments.
+"""
 from __future__ import annotations
 
 import json
@@ -187,7 +192,10 @@ def semantic_rerank(
     order = np.argsort(-final_scores)
 
     return [
-        (recipes[int(i)], round(float(final_scores[int(i)] * output_scale), 1))
+        (
+            recipes[int(i)],
+            round(min(max(float(final_scores[int(i)] * output_scale), 0.0), 100.0), 1),
+        )
         for i in order[:n]
     ]
 

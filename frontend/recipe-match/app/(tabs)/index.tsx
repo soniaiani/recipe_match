@@ -69,6 +69,10 @@ export default function ForYouScreen() {
         <FlatList
           data={recipes}
           keyExtractor={item => String(item.id)}
+          initialNumToRender={20}
+          maxToRenderPerBatch={20}
+          windowSize={7}
+          removeClippedSubviews={false}
           renderItem={({ item }) => (
             <RecipeCard
               recipe={item}
@@ -95,6 +99,9 @@ export default function ForYouScreen() {
               </Text>
             </View>
           )}
+          ListFooterComponent={recipes.length > 0 ? (
+            <Text style={styles.footerText}>{recipes.length} recommendations</Text>
+          ) : null}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
@@ -174,5 +181,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  footerText: {
+    color: Colors.textTertiary,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingTop: 4,
+    paddingBottom: 24,
   },
 });

@@ -39,10 +39,10 @@ const INITIAL: RecState = {
 export function useRecommendation() {
   const [state, setState] = useState<RecState>(INITIAL);
 
-  const startSession = useCallback(async (dietary?: DietaryProfile, semanticQuery?: string) => {
+  const startSession = useCallback(async (dietary?: DietaryProfile) => {
     setState({ ...INITIAL, loading: true });
     try {
-      const res = await recommendationApi.start(dietary, semanticQuery);
+      const res = await recommendationApi.start(dietary);
       setState({
         ...INITIAL,
         phase: 'questioning',

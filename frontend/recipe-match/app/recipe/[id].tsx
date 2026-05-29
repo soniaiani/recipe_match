@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   Image, Alert, Share, Modal, FlatList,
@@ -11,6 +11,7 @@ import { RecipeCard } from '@/components/RecipeCard';
 import {
   recipesApi,
   savedApi,
+  recommendationApi,
   collectionsApi,
   RecipeDetail,
   Collection,
@@ -44,6 +45,8 @@ export default function RecipeDetailScreen() {
   const [similarModal, setSimilarModal] = useState(false);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarRecipes, setSimilarRecipes] = useState<SimilarRecipe[]>([]);
+  const [cooked, setCooked] = useState(false);
+  const viewedRecipeId = useRef<number | null>(null);
 
   useEffect(() => {
     const recipeId = Number(id);
@@ -72,6 +75,12 @@ export default function RecipeDetailScreen() {
       })
       .finally(() => setLoading(false));
   }, [clearSession, id, token]);
+
+  useEffect(() => {
+    if (!recipe || !token || viewedRecipeId.current === recipe.id) return;
+    viewedRecipeId.current = recipe.id;
+    recommendationApi.interaction(recipe.id, 'view').catch(() => {});
+  }, [recipe, token]);
 
   const handleSave = async (collectionId?: string) => {
     if (!recipe) return;
@@ -104,6 +113,21 @@ export default function RecipeDetailScreen() {
       setShoppingModal(true);
     } catch {
       Alert.alert('Error', 'Could not load shopping list');
+    }
+  };
+
+  const handleCooked = async () => {
+    if (!recipe) return;
+    try {
+      if (cooked) {
+        await recommendationApi.deleteInteraction(recipe.id, 'cook');
+        setCooked(false);
+        return;
+      }
+      await recommendationApi.interaction(recipe.id, 'cook');
+      setCooked(true);
+    } catch {
+      Alert.alert('Error', cooked ? 'Could not undo cooked status' : 'Could not log this recipe as cooked');
     }
   };
 
@@ -206,9 +230,9 @@ export default function RecipeDetailScreen() {
             <Text style={styles.description}>{recipe.description}</Text>
           )}
 
-          <View style={styles.actions}>
+          <View style={styles.actionsGrid}>
             <Pressable
-              style={[styles.actionBtn, saved && styles.actionBtnActive]}
+              style={[styles.actionTile, styles.actionTilePrimary, saved && styles.actionBtnActive]}
               onPress={saved ? handleUnsave : () => setCollectionModal(true)}
             >
               <Ionicons
@@ -216,17 +240,30 @@ export default function RecipeDetailScreen() {
                 size={18}
                 color={saved ? Colors.textInverse : Colors.primary}
               />
-              <Text style={[styles.actionBtnText, saved && styles.actionBtnTextActive]}>
+              <Text style={[styles.actionTilePrimaryText, saved && styles.actionBtnTextActive]}>
                 {saved ? 'Saved' : 'Save'}
               </Text>
             </Pressable>
-            <Pressable style={styles.actionBtnSecondary} onPress={handleShoppingList}>
+            <Pressable style={styles.actionTile} onPress={handleShoppingList}>
               <Ionicons name="cart-outline" size={18} color={Colors.textPrimary} />
-              <Text style={styles.actionBtnSecondaryText}>List</Text>
+              <Text style={styles.actionTileText}>List</Text>
             </Pressable>
-            <Pressable style={styles.actionBtnSecondary} onPress={handleShare}>
+            <Pressable
+              style={[styles.actionTile, cooked && styles.actionBtnCooked]}
+              onPress={handleCooked}
+            >
+              <Ionicons
+                name={cooked ? 'checkmark-circle' : 'flame-outline'}
+                size={18}
+                color={cooked ? Colors.success : Colors.textPrimary}
+              />
+              <Text style={[styles.actionTileText, cooked && styles.actionBtnCookedText]}>
+                {cooked ? 'Cooked' : 'Cook'}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.actionTile} onPress={handleShare}>
               <Ionicons name="share-outline" size={18} color={Colors.textPrimary} />
-              <Text style={styles.actionBtnSecondaryText}>Share</Text>
+              <Text style={styles.actionTileText}>Share</Text>
             </Pressable>
           </View>
 
@@ -388,35 +425,37 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 12, color: Colors.primaryDark, fontWeight: '800' },
   description: { fontSize: 15, color: Colors.textSecondary, lineHeight: 23, marginTop: 16 },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 22, marginBottom: 4 },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  actionsGrid: {
     flexDirection: 'row',
-    gap: 6,
-    backgroundColor: Colors.surface,
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 22,
+    marginBottom: 4,
   },
-  actionBtnActive: { backgroundColor: Colors.primary },
-  actionBtnText: { color: Colors.primary, fontWeight: '900', fontSize: 15 },
-  actionBtnTextActive: { color: '#fff' },
-  actionBtnSecondary: {
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+  actionTile: {
+    width: '48.5%',
+    minHeight: 48,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.hairline,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 5,
+    gap: 6,
     backgroundColor: Colors.surface,
   },
-  actionBtnSecondaryText: { color: Colors.textPrimary, fontWeight: '800', fontSize: 14 },
+  actionTilePrimary: { borderColor: Colors.primary },
+  actionBtnActive: { backgroundColor: Colors.primary },
+  actionTilePrimaryText: { color: Colors.primary, fontWeight: '900', fontSize: 15 },
+  actionBtnTextActive: { color: '#fff' },
+  actionTileText: { color: Colors.textPrimary, fontWeight: '800', fontSize: 14 },
+  actionBtnCooked: {
+    borderColor: Colors.successSoft,
+    backgroundColor: Colors.successSoft,
+  },
+  actionBtnCookedText: { color: Colors.success },
   similarBtn: {
     marginTop: 10,
     borderRadius: 16,

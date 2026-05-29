@@ -1,75 +1,91 @@
 # Recipe Match
 
-Recipe Match este o aplicatie full-stack pentru recomandari de retete. Frontend-ul este o aplicatie mobila construita cu Expo si React Native, iar backend-ul este un API FastAPI care foloseste Supabase pentru autentificare, baza de date si acces la date.
+Recipe Match este o aplicatie full-stack pentru descoperire si recomandare de retete. Frontend-ul este o aplicatie mobila Expo/React Native, iar backend-ul este un API FastAPI care foloseste Supabase pentru autentificare, baza de date si operatii administrative.
 
-Aplicatia ajuta utilizatorul sa gaseasca retete potrivite preferintelor sale prin trei mecanisme principale:
+Aplicatia combina mai multe mecanisme de recomandare:
 
-- un flow interactiv de recomandare bazat pe intrebari si un motor Bayesian;
-- un feed personalizat `For You`, bazat pe retetele salvate;
-- un `Ingredient Explorer`, care recomanda ingrediente compatibile si retete pornind de la ingrediente selectate.
+- un motor Bayesian interactiv in tab-ul `Find`, care pune intrebari adaptive si actualizeaza probabilitatile retetelor dupa fiecare raspuns;
+- reranking semantic cu embeddings pentru situatiile in care utilizatorul ofera un text de tip craving/preferinta;
+- un feed `For You` hibrid, construit din interactiuni, raspunsuri istorice si trasee din Ingredient Explorer;
+- un `Ingredient Explorer` bazat pe co-occurenta, PPMI si IDF pentru a sugera ingrediente compatibile;
+- cautare de retete similare prin `pgvector`.
+
+Scopul proiectului este sa ofere recomandari explicabile si personalizate, nu doar cautare dupa text. Retetele sunt filtrate dupa restrictii alimentare, apoi ordonate prin semnale comportamentale, statistice si semantice.
 
 ## Cuprins
 
 - [Functionalitati](#functionalitati)
-- [Tehnologii](#tehnologii)
+- [Stack tehnic](#stack-tehnic)
 - [Structura proiectului](#structura-proiectului)
-- [Arhitectura](#arhitectura)
-- [Fluxuri principale](#fluxuri-principale)
-- [Backend API](#backend-api)
-- [Baza de date](#baza-de-date)
-- [Motorul de recomandare](#motorul-de-recomandare)
+- [Arhitectura generala](#arhitectura-generala)
+- [Date si modelare](#date-si-modelare)
+- [Motorul Bayesian Find](#motorul-bayesian-find)
+- [Reranking semantic](#reranking-semantic)
+- [For You](#for-you)
 - [Ingredient Explorer](#ingredient-explorer)
+- [API backend](#api-backend)
+- [Frontend](#frontend)
+- [Migratii si tabele](#migratii-si-tabele)
+- [Scripturi si evaluare](#scripturi-si-evaluare)
 - [Configurare si rulare](#configurare-si-rulare)
-- [Scripturi utile](#scripturi-utile)
-- [Observatii de productie](#observatii-de-productie)
+- [Note de productie](#note-de-productie)
 
 ## Functionalitati
 
 Aplicatia include:
 
-- autentificare si inregistrare cu Supabase Auth;
-- profil alimentar pentru fiecare utilizator;
-- restrictii alimentare: vegetarian, vegan, gluten-free, dairy-free;
-- ingrediente excluse de utilizator;
-- recomandari interactive prin intrebari;
-- recomandari personalizate pe baza retetelor salvate;
-- cautare si explorare de ingrediente;
-- retete similare semantic folosind embeddings si pgvector;
-- salvarea retetelor;
-- organizarea retetelor salvate in colectii;
-- pagina de detaliu pentru retete;
-- generare lista de cumparaturi din ingredientele retetei;
-- suport pentru interactiuni de tip `view`, `like`, `save`, `cook`, `skip`.
+- autentificare, inregistrare si profil utilizator prin Supabase Auth;
+- profil alimentar: vegetarian, vegan, gluten-free, dairy-free;
+- lista de ingrediente excluse manual;
+- tab `Find` cu sesiune de recomandare prin intrebari;
+- intrebari fixe si adaptive;
+- rezultate cu `match_score` 0-100;
+- tab `For You` cu recomandari personalizate;
+- tab `Ingredient Explorer` pentru pornire de la un ingredient si extinderea unui chain;
+- recomandari de retete pe baza ingredientelor selectate in Explorer;
+- persistarea sesiunilor Explorer prin `explorer_sessions`;
+- salvare retete;
+- colectii pentru retete salvate;
+- pagina de detaliu reteta;
+- lista de cumparaturi;
+- retete similare semantic;
+- interactiuni de tip `view`, `like`, `save`, `cook`, `skip`;
+- scripturi de precomputare embeddings si graf ingrediente;
+- scripturi de evaluare pentru algoritmul Bayesian.
 
-## Tehnologii
+## Stack tehnic
 
 ### Frontend
 
 - Expo SDK 54
 - React 19
 - React Native 0.81
-- Expo Router pentru navigatie bazata pe fisiere
-- Zustand pentru starea globala de autentificare
-- AsyncStorage pentru persistarea tokenului
-- React Native Reanimated si Gesture Handler pentru interactiuni mobile
-- Expo Image pentru afisarea imaginilor
+- Expo Router
+- Zustand pentru auth state
+- AsyncStorage pentru token
+- React Native Gesture Handler si Reanimated
+- Expo Image
+- TypeScript
 
 ### Backend
 
 - FastAPI
-- Pydantic si pydantic-settings
+- Pydantic
+- pydantic-settings
+- Supabase Python client
 - Supabase Auth
 - Supabase PostgREST
 - SlowAPI pentru rate limiting
-- NumPy pentru motorul Bayesian
+- NumPy pentru Bayesian inference
 - sentence-transformers pentru embeddings
 
-### Persistenta
+### Persistenta si cautare semantica
 
 - Supabase PostgreSQL
-- Supabase Auth users
-- pgvector pentru similaritate semantica
-- tabele pentru retete, sesiuni de recomandare, interactiuni, colectii, retete salvate si graf de ingrediente
+- `auth.users`
+- pgvector
+- vector embeddings `vector(384)`
+- RPC-uri SQL pentru similaritate cosine
 
 ## Structura proiectului
 
@@ -85,8 +101,8 @@ recipe_match/
       models/
         schemas.py
       recommender/
-        embeddings.py
         engine.py
+        embeddings.py
         filters.py
         semantic_rerank.py
       routers/
@@ -101,136 +117,442 @@ recipe_match/
       001_recipe_features.sql
       002_recipe_embeddings.sql
       003_ingredient_explorer.sql
+      004_explorer_sessions.sql
+      005_match_recipes_by_embedding.sql
     scripts/
       precompute_embeddings.py
       precompute_ingredient_graph.py
     testari/
+      sensivity_analysis.py
+      ...
 
   frontend/
     recipe-match/
       app/
         _layout.tsx
         (auth)/
+          login.tsx
+          register.tsx
         (tabs)/
-        recipe/[id].tsx
+          index.tsx
+          find.tsx
+          explorer.tsx
+          saved.tsx
+          profile.tsx
+        recipe/
+          [id].tsx
       components/
-      constants/
-      hooks/
+        RecipeCard.tsx
+        LoadingSpinner.tsx
+        explorer/
+          GraphCanvas.tsx
+          ExplorerResults.tsx
       services/
+        api.ts
+        explorerApi.ts
+      hooks/
       store/
-      assets/
+      constants/
 ```
 
-## Arhitectura
+## Arhitectura generala
 
-### Frontend
-
-Frontend-ul este organizat in jurul Expo Router:
-
-- `app/_layout.tsx` initializeaza autentificarea si decide daca utilizatorul ajunge in zona autentificata sau in ecranele de login/register.
-- `app/(auth)` contine ecranele de login si register.
-- `app/(tabs)` contine tab-urile principale ale aplicatiei:
-  - `index.tsx` pentru `For You`;
-  - `find.tsx` pentru flow-ul de recomandare;
-  - `saved.tsx` pentru retete salvate si colectii;
-  - `explorer.tsx` pentru explorarea ingredientelor;
-  - `profile.tsx` pentru profil.
-- `app/recipe/[id].tsx` afiseaza detaliile unei retete.
-- `services/api.ts` si `services/explorerApi.ts` contin clientii HTTP.
-- `store/authStore.ts` pastreaza tokenul, profilul utilizatorului si actiunile de autentificare.
-
-Tokenul Supabase este salvat local in AsyncStorage sub cheia `auth_token` si este trimis catre backend in headerul:
+Frontend-ul trimite requesturi catre backend cu JWT-ul Supabase in header:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-### Backend
+Backend-ul valideaza tokenul in `middleware/auth.py`, extrage `sub` ca `user_id` si foloseste `get_supabase_admin()` pentru operatii cu service role acolo unde este nevoie.
 
-Backend-ul este un API FastAPI modular:
+La startup, `backend/app/main.py` face cateva incarcari importante:
 
-- `main.py` creeaza aplicatia, configureaza CORS, rate limiting si include routerele.
-- `config.py` citeste variabilele de mediu din `backend/.env`.
-- `database.py` creeaza clientul Supabase anon si clientul service-role.
-- `middleware/auth.py` valideaza JWT-ul Supabase si extrage `user_id`.
-- `models/schemas.py` defineste modelele Pydantic pentru requesturi si raspunsuri.
-- `routers/` contine endpoint-urile pe domenii functionale.
-- `recommender/engine.py` contine motorul Bayesian.
-- `recommender/semantic_rerank.py` combina scoruri semantice cu semnale din raspunsuri.
-- `recommender/filters.py` filtreaza retetele dupa ingrediente excluse.
-- `recommender/embeddings.py` construieste textul retetelor si genereaza embeddings.
+1. Citeste toate retetele necesare motorului Bayesian din Supabase.
+2. Le salveaza in `app.state.rec_recipes`.
+3. Calculeaza ponderile intrebarilor cu `compute_feature_mi`.
+4. Incalzeste modelul semantic printr-un embedding dummy.
+5. Incalzeste cache-ul Ingredient Explorer.
+6. Incarca IDF pentru toate ingredientele din `ingredient_stats`, paginat in loturi de 1000.
 
-La pornire, backend-ul incarca retetele din Supabase in memorie pentru motorul Bayesian si calculeaza ponderi de informatie pentru intrebari.
+Sesiunile active de recomandare sunt tinute in memorie in backend, iar sumarul este persistat in `recommendation_sessions`.
 
-## Fluxuri principale
+## Date si modelare
 
-### Autentificare
+Tabelul central este `recipes`. Pe langa campurile de afisare, retetele au feature-uri normalizate folosite de algoritmi:
 
-1. Utilizatorul creeaza cont sau se logheaza.
-2. Backend-ul foloseste Supabase Auth.
-3. La login/register, backend-ul returneaza tokenul si profilul utilizatorului.
-4. Frontend-ul salveaza tokenul in AsyncStorage.
-5. La pornirea aplicatiei, frontend-ul valideaza tokenul prin `GET /auth/me`.
+- categorice: `meal_type`, `protein_type`, `cuisine`;
+- dieta: `is_vegetarian`, `is_vegan`, `is_gluten_free`, `is_dairy_free`;
+- gust si timp: `is_spicy`, `is_sweet`, `is_quick`;
+- metoda: `needs_oven`, `needs_stovetop`, `is_no_cook`;
+- ingrediente/baze: `has_pasta`, `has_rice`, `has_potato`, `has_tomato_base`, `has_cream_base`, `has_cheese`, `has_broth_base`, `has_mushroom`, `has_leafy_greens`, `has_beans_legumes`, `has_fruit`, `has_nuts`, `has_chocolate`, `has_asian_sauce`;
+- ingrediente brute si curate: `ingredients`, `ingredients_clean`, `ingredients_clean_str`;
+- embedding semantic: `embedding vector(384)`.
 
-Profilul alimentar este salvat in metadata-ul utilizatorului Supabase si contine:
+Filtrele alimentare sunt filtre dure. Daca utilizatorul este vegan, o reteta non-vegana nu intra in candidate pool. La fel pentru gluten-free, dairy-free si ingrediente excluse.
 
-- `is_vegetarian`
-- `is_vegan`
-- `is_gluten_free`
-- `is_dairy_free`
-- `excluded_ingredients`
+## Motorul Bayesian Find
 
-### Flow-ul Find
+Motorul este in `backend/app/recommender/engine.py`. Este folosit de endpointurile din `/recommendations`.
 
-1. Frontend-ul apeleaza `POST /recommendations/session/start`.
-2. Backend-ul filtreaza retetele dupa profilul alimentar.
-3. Se creeaza o sesiune in memorie.
-4. Utilizatorul raspunde la intrebari.
-5. Backend-ul actualizeaza probabilitatile Bayesiene.
-6. Backend-ul decide urmatoarea intrebare sau returneaza rezultatele.
-7. Frontend-ul afiseaza retete cu `match_score`.
+### Ideea principala
 
-Intrebarile fixe sunt:
+O sesiune porneste cu toate retetele candidate avand probabilitate uniforma. Pentru fiecare raspuns al utilizatorului, motorul calculeaza cat de compatibila este fiecare reteta cu raspunsul si actualizeaza distributia probabilitatilor.
 
-- `meal_type`
-- `protein_type`
-- `cuisine`
+Probabilitatile sunt tinute in log-space:
 
-Intrebarile adaptive sunt legate de:
+```text
+log P(recipe | answers) += weight(question) * log likelihood(answer | recipe)
+```
 
-- gust: spicy, sweet;
-- timp: quick;
-- metoda de gatit: oven, stovetop, no-cook;
-- ingrediente si baze culinare: pasta, rice, potato, tomato base, cream base, cheese, broth;
-- categorii de ingrediente: mushroom, leafy greens, beans/legumes, fruit, nuts, chocolate;
-- alte semnale: tortilla, spicy ingredient, asian sauce.
+Asta evita underflow numeric cand sunt multe retete si multe update-uri.
 
-### For You
+### Parametri principali
 
-Endpoint-ul `GET /foryou` returneaza recomandari pornind de la retetele salvate de utilizator.
+In `engine.py`:
 
-Backend-ul:
+```python
+MAX_QUESTIONS = 15
+MIN_QUESTIONS_BEFORE_STOP = 4
+POSTERIOR_TEMPERATURE = 1.25
+P_CORRECT = 0.75
+P_NOISE = 0.05
+ENTROPY_STOP_THRESHOLD = math.log2(50)
+```
 
-1. citeste retetele salvate din `saved_recipes`;
-2. construieste un profil simplu din meal type, cuisine si flaguri precum quick/spicy/sweet;
-3. exclude retetele deja salvate;
-4. sorteaza retetele candidate dupa scorul de potrivire.
+`P_CORRECT` este probabilitatea atribuita unei retete care se potriveste cu raspunsul. `P_NOISE` este probabilitatea atribuita unei retete care nu se potriveste. Cu cat `P_NOISE` este mai mic, cu atat motorul penalizeaza mai dur nepotrivirile. Testele din `backend/testari/sensivity_analysis.py` arata ca valori prea agresive pot face targetul sa cada din top, pentru ca feature-urile sunt grosiere si uneori incomplete.
 
-### Retete salvate si colectii
+`POSTERIOR_TEMPERATURE` netezeste distributia. O temperatura mai mare face motorul mai putin sigur, deci poate cere mai multe intrebari, dar reduce riscul de convergenta prematura.
 
-Utilizatorul poate salva retete si le poate organiza in colectii. Daca salveaza o reteta fara sa aleaga o colectie, backend-ul creeaza sau refoloseste automat colectia implicita `Saved`.
+### Intrebari
 
-### Ingredient Explorer
+Intrebarile fixe sunt puse primele:
 
-Ingredient Explorer permite pornirea de la un ingredient si extinderea listei cu ingrediente compatibile. Sugestiile sunt calculate folosind:
+1. `meal_type`
+2. `cuisine`
+3. `protein_type`
 
-- frecventa ingredientelor in retetele care contin ingredientele selectate;
-- scoruri PPMI din tabelul `ingredient_graph`;
-- numarul de retete in care apare fiecare ingredient.
+Intrebarile adaptive sunt booleene si acopera gust, timp, metoda de gatit si ingrediente:
 
-## Backend API
+- `is_spicy`
+- `is_sweet`
+- `is_quick`
+- `needs_oven`
+- `needs_stovetop`
+- `is_no_cook`
+- `has_pasta`
+- `has_rice`
+- `has_potato`
+- `has_tomato_base`
+- `has_cream_base`
+- `has_cheese`
+- `has_broth_base`
+- `has_mushroom`
+- `has_leafy_greens`
+- `has_beans_legumes`
+- `has_fruit`
+- `has_nuts`
+- `has_chocolate`
+- `has_asian_sauce`
 
-Toate raspunsurile API sunt invelite intr-un format comun:
+Exista excluderi logice intre metode de gatit. De exemplu, daca utilizatorul spune `yes` la `is_no_cook`, nu mai are sens sa fie intrebat `needs_oven` sau `needs_stovetop`.
+
+### Likelihood
+
+Pentru o intrebare categorica, daca reteta are exact valoarea aleasa, primeste `P_CORRECT`; altfel primeste `P_NOISE`.
+
+Pentru multiselect, daca valoarea retetei este in lista selectata, primeste `P_CORRECT`; altfel `P_NOISE`.
+
+Pentru boolean:
+
+- raspuns `yes`: retetele care au feature-ul primesc `P_CORRECT`;
+- raspuns `no`: retetele care nu au feature-ul primesc `P_CORRECT`;
+- `skip`, `unknown`, `any`: likelihood 1.0, deci raspunsul nu schimba distributia.
+
+### Ponderi prin Mutual Information
+
+`compute_feature_mi()` estimeaza cat de informativ este fiecare feature adaptiv fata de tinta `(cuisine, protein_type)`. Rezultatul este normalizat in interval aproximativ `0.3 - 3.0`.
+
+Aceste ponderi sunt folosite la actualizarea Bayesiană a posteriorului, controland cat de puternic modifica un raspuns distributia de probabilitate. Selectia intrebarii urmatoare ramane separata si este calculata prin expected entropy reduction pe starea curenta.
+
+Intrebarile fixe primesc ponderi explicite:
+
+```python
+meal_type = 3.0
+cuisine = 2.4
+protein_type = 2.2
+```
+
+Acestea sunt importante pentru convergenta, deoarece primele raspunsuri trebuie sa restranga candidate pool-ul rapid.
+
+### Alegerea urmatoarei intrebari
+
+`select_next_question()` foloseste reducerea asteptata a entropiei. Pentru fiecare intrebare candidata, simuleaza raspunsurile posibile si estimeaza cat ar scadea entropia distributiei, fara a aplica ponderile globale MI in aceasta simulare.
+
+Intrebarea aleasa este cea cu cel mai mare expected entropy reduction.
+
+Daca utilizatorul a dat mai multe raspunsuri `no` sau `any`, motorul favorizeaza intrebari booleene cu prevalenta echilibrata in retetele relevante. Asta evita intrebari care ar separa prea putin candidate pool-ul.
+
+### Conditia de oprire
+
+Sesiunea nu se opreste in timpul intrebarilor fixe. Dupa numarul minim de intrebari, `should_stop()` verifica:
+
+- entropia este sub prag;
+- probabilitatea este suficient concentrata in top 10;
+- topul este stabil intre ultimele update-uri;
+- sau s-a atins `MAX_QUESTIONS`.
+
+Sesiunea se opreste cand cel putin doua dintre conditiile principale sunt adevarate.
+
+### Scorul afisat
+
+`match_score` este un procent 0-100. In fluxul cu semantic rerank, scorul este clamp-uit defensiv ca sa nu depaseasca 100.
+
+## Reranking semantic
+
+Reranking-ul semantic este in `backend/app/recommender/semantic_rerank.py`.
+
+Modelul folosit este:
+
+```text
+sentence-transformers/all-MiniLM-L6-v2
+```
+
+Embedding-urile au dimensiunea 384 si sunt normalizate. Similaritatea este produs scalar/cosine.
+
+### Cand se activeaza
+
+Semantic rerank se activeaza cand exista semnal semantic:
+
+- `semantic_query`;
+- `craving_text`;
+- suficiente raspunsuri ca sa se construiasca un query textual util.
+
+### Construirea query-ului
+
+`build_preference_query()` transforma raspunsurile in text:
+
+- cuisine -> `Italian recipe`, `Asian recipe`, etc.;
+- meal type -> `for lunch or dinner`;
+- protein -> `with chicken`;
+- booleene pozitive -> `spicy`, `quick and easy`, `with cheese`;
+- booleene negative -> `not spicy`, `without pasta`, etc.;
+- semantic query este prepended.
+
+### Combinarea scorurilor
+
+Sunt doua moduri:
+
+1. Blend semantic puternic:
+
+```text
+final = beta * bayes_norm + (1 - beta) * semantic_norm
+```
+
+2. Tie-breaker semantic:
+
+```text
+final = bayes_score + semantic_norm * TIE_BREAKER_POINTS
+```
+
+Rezultatul este clamp-uit intre 0 si 100 inainte de a ajunge la frontend.
+
+### Warmup
+
+Modelul Hugging Face se incarca lazy. Ca sa nu blocheze o sesiune la intrebarea 5-6, backend-ul face warmup la startup:
+
+```python
+encode_text("warmup recipe preferences")
+```
+
+Warning-ul despre `HF_TOKEN` nu este fatal; inseamna doar ca requesturile catre Hugging Face sunt neautentificate si pot avea rate limits mai mici.
+
+## For You
+
+`GET /foryou` este implementat in `backend/app/routers/foryou.py`.
+
+Este un recomandator hibrid. Foloseste trei categorii de semnale:
+
+1. interactiuni implicite;
+2. raspunsuri din sesiuni completate;
+3. trasee din Ingredient Explorer.
+
+### Profil din interactiuni
+
+`build_interaction_profile()` citeste:
+
+- `recipe_interactions`
+- `saved_recipes`
+
+Interactiunile au ponderi:
+
+```python
+view = 0.5
+like = 1.5
+save = 2.0
+cook = 3.0
+```
+
+Ponderea scade exponential in timp:
+
+```text
+weight = base_weight * exp(-0.02 * days_ago)
+```
+
+Profilul rezultat contine:
+
+- distributii pentru `meal_type`, `protein_type`, `cuisine`;
+- medii pentru feature-uri booleene;
+- top ingrediente din retetele interactionate/salvate;
+- `saved_ids`, pentru a evita recomandarea retetelor deja salvate.
+
+### Profil din raspunsuri
+
+`build_answers_profile()` citeste ultimele sesiuni completate din `recommendation_sessions`.
+
+Pentru categorice, pastreaza valorile care apar in cel putin aproximativ 40% din sesiunile recente. Pentru booleene, decide `yes` sau `no` daca semnalul este suficient de frecvent.
+
+### Profil din Explorer
+
+`build_explorer_profile()` citeste `explorer_sessions`.
+
+Fiecare sesiune Explorer este un singur rand, identificat prin `session_id` generat in frontend. Backend-ul face upsert pe acelasi ID, deci un chain incremental nu este numarat de mai multe ori.
+
+Exemplu:
+
+```text
+["spaghetti", "parmesan cheese"]
+["spaghetti", "parmesan cheese", "bacon"]
+```
+
+devine un singur rand actualizat, nu doua sesiuni separate.
+
+For You numara fiecare ingredient o singura data per sesiune si pastreaza ingredientele care apar in cel putin 30% din sesiunile recente.
+
+### Profil semantic
+
+`build_semantic_profile()` construieste textul pentru embedding:
+
+1. ingrediente frecvente din Explorer;
+2. ingrediente din interactiuni;
+3. top valori categorice;
+4. feature-uri booleene pozitive.
+
+Textul este embed-uit si trimis catre RPC-ul:
+
+```sql
+match_recipes_by_embedding(query_embedding vector(384), match_count int)
+```
+
+### Scor final
+
+Pentru fiecare candidat:
+
+```text
+score =
+  w_interactions * interaction_score
+  + w_answers * answers_score
+  + w_semantic * semantic_score
+```
+
+Ponderile depind de cate semnale exista:
+
+- fara interactiuni, dar cu sesiuni: answers 0.60, semantic 0.40;
+- fara sesiuni, dar cu interactiuni: interactions 0.55, semantic 0.45;
+- cu ambele: ponderi cresc gradual cu numarul de interactiuni si sesiuni, semantic ramane minim 0.15;
+- daca exista doar Explorer, semantic devine 1.0.
+
+Candidatii provin din doua pool-uri:
+
+- top semantic din RPC;
+- top profil dupa matching pe feature-uri.
+
+La final, `_diverse_top()` limiteaza repetitia de cuisine si meal type, ca feed-ul sa fie mai variat.
+
+### Cold start
+
+Daca utilizatorul nu are interactiuni, sesiuni si nici Explorer, For You intoarce retete populare. Popularitatea este estimata din `recipe_interactions` (`save`, `cook`) si `saved_recipes`.
+
+## Ingredient Explorer
+
+Ingredient Explorer este implementat in `backend/app/routers/explorer.py` si in frontend in `app/(tabs)/explorer.tsx`.
+
+Scopul lui este sa ajute utilizatorul sa construiasca un chain de ingrediente compatibile si apoi sa vada retete care contin acel chain.
+
+### Date folosite
+
+Explorer foloseste:
+
+- `recipes.ingredients_clean`;
+- `ingredient_stats`;
+- `ingredient_graph`;
+- cache in memorie pentru randurile retetelor;
+- IDF pentru ingrediente.
+
+La startup:
+
+- `warm_explorer_cache()` incarca retetele si ingredientele curatate;
+- `warm_ingredient_idf()` incarca toate randurile din `ingredient_stats`, paginat.
+
+### Start
+
+`POST /explorer/start` primeste un ingredient. Backend-ul:
+
+1. normalizeaza ingredientul;
+2. verifica daca exista in `ingredient_stats`;
+3. gaseste retetele care il contin;
+4. calculeaza ingrediente candidate din acele retete;
+5. filtreaza ingrediente de pantry;
+6. combina frecventa, IDF si PPMI;
+7. returneaza top 5 sugestii.
+
+### Expand
+
+`POST /explorer/expand` primeste:
+
+```json
+{
+  "selected_ingredients": ["spaghetti", "parmesan cheese"],
+  "session_id": "...",
+  "finalize": false
+}
+```
+
+Backend-ul cauta retete care contin toate ingredientele selectate. Sugestiile noi sunt calculate cu:
+
+```text
+frequency_score = count_in_matching_recipes / number_of_matching_recipes
+tfidf_score = frequency_score * idf
+shifted_ppmi = max(avg_ppmi - log(k), 0)
+final_score = 0.7 * tfidf_score + 0.3 * shifted_ppmi
+```
+
+Sugestiile sunt sortate descrescator dupa `final_score`.
+
+### Recommend
+
+`POST /explorer/recommend` intoarce retete care contin ingredientele selectate, sortate dupa Jaccard:
+
+```text
+jaccard = |selected ingredients intersect recipe ingredients| / |selected union recipe ingredients|
+```
+
+### Persistarea sesiunii Explorer
+
+Frontend-ul genereaza un UUID cand incepe o sesiune noua de Explorer. La fiecare expand sau recommend trimite acelasi `session_id`.
+
+Backend-ul face upsert in `explorer_sessions`:
+
+- `id`: session id;
+- `user_id`;
+- `chain`;
+- `updated_at`;
+- `finalized_at` cand userul apasa Find Recipes.
+
+Acest tabel nu influenteaza sugestiile Explorer. El este citit doar de For You pentru personalizare.
+
+## API backend
+
+Toate raspunsurile sunt invelite in:
 
 ```json
 {
@@ -239,358 +561,242 @@ Toate raspunsurile API sunt invelite intr-un format comun:
 }
 ```
 
-In caz de eroare:
-
-```json
-{
-  "data": null,
-  "error": "Mesaj de eroare"
-}
-```
-
 ### Auth
 
 | Metoda | Endpoint | Descriere |
 | --- | --- | --- |
-| POST | `/auth/register` | Creeaza utilizator si profil alimentar |
-| POST | `/auth/login` | Autentifica utilizatorul |
+| POST | `/auth/register` | Creeaza utilizator Supabase si metadata alimentara |
+| POST | `/auth/login` | Autentifica si returneaza JWT |
 | POST | `/auth/logout` | Logout |
-| GET | `/auth/me` | Returneaza profilul curent |
-| PATCH | `/auth/me` | Actualizeaza profilul alimentar |
+| GET | `/auth/me` | Profil curent |
+| PATCH | `/auth/me` | Actualizare profil alimentar |
 
 ### Recipes
 
 | Metoda | Endpoint | Descriere |
 | --- | --- | --- |
-| GET | `/recipes/ingredients` | Sugestii de ingrediente pentru cautare |
+| GET | `/recipes/ingredients` | Sugestii de ingrediente |
 | GET | `/recipes/{recipe_id}` | Detalii reteta |
 | GET | `/recipes/{recipe_id}/shopping-list` | Lista de cumparaturi |
-| GET | `/recipes/{recipe_id}/similar` | Retete similare semantic |
-
-### Saved
-
-| Metoda | Endpoint | Descriere |
-| --- | --- | --- |
-| POST | `/saved` | Salveaza o reteta |
-| GET | `/saved` | Listeaza toate retetele salvate |
-| DELETE | `/saved/{recipe_id}` | Sterge o reteta salvata |
-| GET | `/saved/collections/{collection_id}` | Listeaza retetele dintr-o colectie |
-
-### Collections
-
-| Metoda | Endpoint | Descriere |
-| --- | --- | --- |
-| GET | `/collections` | Listeaza colectiile utilizatorului |
-| POST | `/collections` | Creeaza o colectie |
-| DELETE | `/collections/{collection_id}` | Sterge o colectie |
-
-### For You
-
-| Metoda | Endpoint | Descriere |
-| --- | --- | --- |
-| GET | `/foryou` | Recomandari personalizate din istoricul salvarilor |
+| GET | `/recipes/{recipe_id}/similar` | Retete similare prin pgvector |
 
 ### Recommendations
 
 | Metoda | Endpoint | Descriere |
 | --- | --- | --- |
-| POST | `/recommendations/session/start` | Porneste o sesiune de recomandare |
-| POST | `/recommendations/session/{session_id}/answer` | Trimite raspunsul la o intrebare |
-| GET | `/recommendations/session/{session_id}/results` | Returneaza rezultatele sesiunii |
-| POST | `/recommendations/interaction` | Inregistreaza o interactiune cu o reteta |
+| POST | `/recommendations/session/start` | Porneste sesiune Bayesian |
+| POST | `/recommendations/session/{session_id}/answer` | Trimite raspuns |
+| GET | `/recommendations/session/{session_id}/results` | Rezultate sesiune |
+| POST | `/recommendations/interaction` | Salveaza interactiune |
+
+### For You
+
+| Metoda | Endpoint | Descriere |
+| --- | --- | --- |
+| GET | `/foryou` | Feed personalizat hibrid |
 
 ### Explorer
 
 | Metoda | Endpoint | Descriere |
 | --- | --- | --- |
-| POST | `/explorer/start` | Porneste explorarea de la un ingredient |
-| POST | `/explorer/expand` | Sugereaza ingrediente noi pe baza celor selectate |
-| POST | `/explorer/recommend` | Recomanda retete pe baza ingredientelor selectate |
-| GET | `/explorer/search` | Cauta ingrediente |
+| GET | `/explorer/search?q=` | Cauta ingrediente |
+| POST | `/explorer/start` | Porneste de la un ingredient |
+| POST | `/explorer/expand` | Extinde chain-ul |
+| POST | `/explorer/recommend` | Recomanda retete pentru chain |
 
-## Baza de date
+### Saved si Collections
 
-Baza de date este Supabase PostgreSQL. Autentificarea este gestionata de Supabase Auth, iar tabelele aplicatiei sunt in schema `public`.
-
-### `auth.users`
-
-Tabel gestionat de Supabase Auth. Aplicatia il foloseste pentru identitatea utilizatorilor.
-
-Datele alimentare ale utilizatorului sunt tinute in `user_metadata`.
-
-| Camp metadata | Tip | Descriere |
+| Metoda | Endpoint | Descriere |
 | --- | --- | --- |
-| `is_vegetarian` | boolean | Utilizator vegetarian |
-| `is_vegan` | boolean | Utilizator vegan |
-| `is_gluten_free` | boolean | Evita glutenul |
-| `is_dairy_free` | boolean | Evita lactatele |
-| `excluded_ingredients` | text[] / list | Ingrediente excluse manual |
+| GET | `/saved` | Retete salvate |
+| POST | `/saved` | Salveaza reteta |
+| DELETE | `/saved/{recipe_id}` | Sterge reteta salvata |
+| GET | `/saved/collections/{collection_id}` | Retete din colectie |
+| GET | `/collections` | Listeaza colectii |
+| POST | `/collections` | Creeaza colectie |
+| DELETE | `/collections/{collection_id}` | Sterge colectie |
 
-### `recipes`
+## Frontend
 
-Tabelul principal al aplicatiei. Contine datele retetelor, campuri pentru afisare, campuri pentru filtrare si feature-uri folosite de motorul de recomandare.
+### Navigatie
 
-#### Campuri de baza
+Expo Router imparte aplicatia in:
 
-| Coloana | Tip estimat | Descriere |
-| --- | --- | --- |
-| `id` | integer | Identificator reteta |
-| `name` | text | Numele retetei |
-| `description` | text | Descriere scurta |
-| `image_url` | text | URL imagine |
-| `prep_time` | text | Timp de pregatire in format text |
-| `cook_time` | text | Timp de gatire in format text |
-| `total_time` | text | Timp total in format text |
-| `total_minutes` | double precision | Timp total numeric, folosit la sortari/filtre |
-| `servings` | integer | Numar portii |
-| `ingredients` | text | Ingrediente brute |
-| `ingredients_clean` | json/text[] | Ingrediente normalizate |
-| `ingredients_clean_str` | text | Ingrediente normalizate ca string, folosit in Explorer |
-| `directions` | text | Pasi de preparare |
+- `(auth)`: login si register;
+- `(tabs)`: zona autentificata;
+- `recipe/[id]`: detalii reteta.
 
-#### Campuri categorice
+Tab-urile principale:
 
-| Coloana | Tip estimat | Descriere |
-| --- | --- | --- |
-| `meal_type` | text | Tipul mesei: breakfast/lunch/dinner etc. |
-| `protein_type` | text | Proteina dominanta |
-| `cuisine` | text | Bucatarie sau stil culinar |
+- `index.tsx`: For You;
+- `find.tsx`: sesiune Bayesian;
+- `explorer.tsx`: Ingredient Explorer;
+- `saved.tsx`: salvate si colectii;
+- `profile.tsx`: profil utilizator.
 
-#### Campuri pentru restrictii si badge-uri
+### Auth store
 
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `is_vegetarian` | boolean | Reteta vegetariana |
-| `is_vegan` | boolean | Reteta vegana |
-| `is_gluten_free` | boolean | Reteta fara gluten |
-| `is_dairy_free` | boolean | Reteta fara lactate |
-| `is_nut_free` | boolean | Reteta fara nuci/alune |
-| `is_quick` | boolean | Reteta rapida |
-| `is_spicy` | boolean | Reteta picanta |
-| `is_sweet` | boolean | Reteta dulce |
-| `needs_oven` | boolean | Necesita cuptor |
-| `needs_stovetop` | boolean | Necesita aragaz/plita |
-| `is_no_cook` | boolean | Nu necesita gatire |
+`store/authStore.ts` tine:
 
-#### Feature-uri de ingrediente
+- tokenul;
+- profilul utilizatorului;
+- starea de initializare;
+- actiuni login/register/logout/update.
 
-Aceste coloane sunt adaugate prin `backend/migrations/001_recipe_features.sql` si sunt folosite de motorul Bayesian.
+Tokenul este persistat in AsyncStorage.
 
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `has_pasta` | boolean | Contine paste |
-| `has_rice` | boolean | Contine orez |
-| `has_potato` | boolean | Contine cartof |
-| `has_tomato_base` | boolean | Are baza de rosii |
-| `has_cream_base` | boolean | Are baza cremoasa |
-| `has_cheese` | boolean | Contine branza |
-| `has_broth_base` | boolean | Are baza de supa/broth |
-| `has_mushroom` | boolean | Contine ciuperci |
-| `has_leafy_greens` | boolean | Contine verdeturi/frunze |
-| `has_beans_legumes` | boolean | Contine fasole/leguminoase |
-| `has_fruit` | boolean | Contine fructe |
-| `has_nuts` | boolean | Contine nuci/alune |
-| `has_chocolate` | boolean | Contine ciocolata |
-| `has_tortilla` | boolean | Contine tortilla |
-| `has_spicy_ingredient` | boolean | Contine ingrediente picante |
-| `has_asian_sauce` | boolean | Contine sosuri asiatice |
+### Clienti HTTP
 
-#### Embeddings
+`services/api.ts` contine clientul principal pentru auth, recipes, saved, collections si recommendations.
 
-Adaugate prin `backend/migrations/002_recipe_embeddings.sql`.
+`services/explorerApi.ts` contine clientul Explorer si generatorul local de session id:
 
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `embedding` | `vector(384)` | Embedding semantic generat cu `sentence-transformers/all-MiniLM-L6-v2` |
-
-Index:
-
-```sql
-CREATE INDEX IF NOT EXISTS recipes_embedding_ivfflat_idx
-    ON public.recipes
-    USING ivfflat (embedding vector_cosine_ops)
-    WITH (lists = 100);
+```ts
+createExplorerSessionId()
 ```
 
-Functie pentru retete similare:
+### Find UI
+
+`app/(tabs)/find.tsx` afiseaza:
+
+- progresul intrebarilor;
+- intrebari categorice/multiselect ca optiuni;
+- intrebari booleene ca swipe/actiuni;
+- rezultate cu badge `match_score`.
+
+### Explorer UI
+
+`app/(tabs)/explorer.tsx` gestioneaza:
+
+- cautarea ingredientului initial;
+- session id generat la start;
+- chain-ul selectat;
+- sugestiile din backend;
+- butonul Find Recipes;
+- ecranul de rezultate Explorer.
+
+`GraphCanvas` afiseaza nodul central, ingredientele anterioare si sugestiile.
+
+## Migratii si tabele
+
+### `001_recipe_features.sql`
+
+Adauga feature-uri booleene pe `recipes` si creeaza:
+
+- `recommendation_sessions`;
+- `recipe_interactions`.
+
+`recommendation_sessions` pastreaza sumarul sesiunilor:
+
+- `id`;
+- `user_id`;
+- `answers`;
+- `question_order`;
+- `questions_asked`;
+- `entropy_final`;
+- `top_recipe_ids`;
+- `completed_at`.
+
+`recipe_interactions` pastreaza:
+
+- `user_id`;
+- `recipe_id`;
+- `interaction_type`;
+- `weight`;
+- `created_at`.
+
+### `002_recipe_embeddings.sql`
+
+Activeaza pgvector si adauga:
+
+- `recipes.embedding vector(384)`;
+- index ivfflat pentru cautare vectoriala;
+- RPC pentru retete similare.
+
+### `003_ingredient_explorer.sql`
+
+Creeaza:
+
+- `ingredient_graph`;
+- `ingredient_stats`.
+
+`ingredient_graph` contine perechi de ingrediente si scoruri PPMI.
+
+`ingredient_stats` contine frecventa fiecarui ingredient.
+
+### `004_explorer_sessions.sql`
+
+Creeaza:
 
 ```sql
-public.match_similar_recipes(
-    target_recipe_id integer,
-    match_count integer DEFAULT 20
+public.explorer_sessions (
+  id uuid primary key,
+  user_id uuid references auth.users(id),
+  chain text[] not null,
+  started_at timestamp,
+  updated_at timestamp,
+  finalized_at timestamp
 )
 ```
 
-Returneaza retete ordonate dupa similaritate cosine fata de embedding-ul retetei tinta.
+Este folosit pentru personalizarea For You pe baza explorarii ingredientelor.
 
-### `collections`
+### `005_match_recipes_by_embedding.sql`
 
-Tabel pentru colectiile utilizatorului.
-
-| Coloana | Tip estimat | Descriere |
-| --- | --- | --- |
-| `id` | uuid | Identificator colectie |
-| `user_id` | uuid | Utilizatorul proprietar |
-| `name` | text | Numele colectiei |
-| `created_at` | timestamp | Data crearii |
-
-Comportament:
-
-- fiecare utilizator poate avea mai multe colectii;
-- backend-ul creeaza automat colectia `Saved` daca utilizatorul salveaza o reteta fara colectie.
-
-### `saved_recipes`
-
-Tabel pentru retetele salvate.
-
-| Coloana | Tip estimat | Descriere |
-| --- | --- | --- |
-| `id` | uuid | Identificator rand |
-| `user_id` | uuid | Utilizatorul care a salvat reteta |
-| `recipe_id` | integer | Reteta salvata |
-| `collection_id` | uuid/null | Colectia in care este salvata |
-| `saved_at` | timestamp | Data salvarii |
-
-Relatii:
-
-- `user_id` refera utilizatorul Supabase;
-- `recipe_id` refera `recipes.id`;
-- `collection_id` refera `collections.id`.
-
-### `recommendation_sessions`
-
-Creat prin `backend/migrations/001_recipe_features.sql`. Pastreaza sumarul sesiunilor de recomandare.
-
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `id` | uuid | Identificator sesiune |
-| `user_id` | uuid | Utilizatorul sesiunii, referinta la `auth.users(id)` |
-| `created_at` | timestamp | Momentul crearii |
-| `completed_at` | timestamp/null | Momentul finalizarii |
-| `answers` | jsonb | Raspunsurile date de utilizator |
-| `question_order` | text[] | Ordinea intrebarilor puse |
-| `top_recipe_ids` | integer[] | Retetele de top la finalul sesiunii |
-| `questions_asked` | integer | Numar intrebari puse |
-| `entropy_final` | double precision | Entropia finala a distributiei Bayesiene |
-
-Observatie: sesiunea activa este tinuta in memorie, iar acest tabel pastreaza doar sumarul/persistenta.
-
-### `recipe_interactions`
-
-Creat prin `backend/migrations/001_recipe_features.sql`. Poate fi folosit pentru personalizare mai avansata.
-
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `id` | uuid | Identificator interactiune |
-| `user_id` | uuid | Utilizatorul, referinta la `auth.users(id)` |
-| `recipe_id` | integer | Reteta, referinta la `recipes.id` |
-| `interaction_type` | text | Tip interactiune: `view`, `like`, `save`, `cook`, `skip` |
-| `weight` | double precision | Greutatea interactiunii |
-| `created_at` | timestamp | Momentul interactiunii |
-
-### `ingredient_graph`
-
-Creat prin `backend/migrations/003_ingredient_explorer.sql`. Este folosit pentru recomandari de ingrediente compatibile.
-
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `ingredient_a` | text | Ingredient sursa |
-| `ingredient_b` | text | Ingredient asociat |
-| `ppmi_score` | float | Scor Positive Pointwise Mutual Information |
-| `co_occurrence` | integer | Numar de retete in care apar impreuna |
-
-Cheie primara:
+Creeaza RPC:
 
 ```sql
-PRIMARY KEY (ingredient_a, ingredient_b)
+match_recipes_by_embedding(
+  query_embedding vector(384),
+  match_count int default 100
+)
 ```
 
-Index:
+Returneaza `id` si `similarity` pentru cele mai apropiate retete dupa embedding.
 
-```sql
-CREATE INDEX IF NOT EXISTS ingredient_graph_a_score_idx
-  ON ingredient_graph (ingredient_a, ppmi_score DESC);
+## Scripturi si evaluare
+
+### Embeddings
+
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1
+python scripts\precompute_embeddings.py
 ```
 
-### `ingredient_stats`
+Calculeaza embedding pentru fiecare reteta si salveaza in `recipes.embedding`.
 
-Creat prin `backend/migrations/003_ingredient_explorer.sql`. Este folosit pentru cautare si validarea ingredientelor.
+### Graf ingrediente
 
-| Coloana | Tip | Descriere |
-| --- | --- | --- |
-| `ingredient` | text | Ingredient normalizat |
-| `recipe_count` | integer | Numar de retete in care apare |
-| `total_recipes` | integer | Numar total de retete analizate |
-
-Cheie primara:
-
-```sql
-PRIMARY KEY (ingredient)
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1
+python scripts\precompute_ingredient_graph.py
 ```
 
-Index:
+Construieste `ingredient_graph` si `ingredient_stats` din `ingredients_clean`.
 
-```sql
-CREATE INDEX IF NOT EXISTS ingredient_stats_recipe_count_idx
-  ON ingredient_stats (recipe_count DESC);
-```
+### Sensitivity analysis
 
-## Motorul de recomandare
+`backend/testari/sensivity_analysis.py` testeaza combinatii de `P_CORRECT` si `P_NOISE`.
 
-Motorul Bayesian este implementat in `backend/app/recommender/engine.py`.
+Metrici:
 
-### Date incarcate la startup
+- Avg Q;
+- Med Q;
+- HR@10;
+- HR@20;
+- RankFound;
+- cate sesiuni se opresc prin `should_stop` vs `max_questions`;
+- scenarii cu raspunsuri perfecte si raspunsuri noisy.
 
-La pornirea API-ului, `main.py` incarca din `recipes` campurile necesare:
-
-- identificare si afisare: `id`, `name`, `image_url`, `description`;
-- categorii: `meal_type`, `protein_type`, `cuisine`;
-- ingrediente: `ingredients`, `ingredients_clean`;
-- embeddings: `embedding`;
-- restrictii: `is_vegetarian`, `is_vegan`, `is_gluten_free`, `is_dairy_free`;
-- preferinte: `is_spicy`, `is_sweet`, `is_quick`;
-- metode de gatit: `needs_oven`, `needs_stovetop`, `is_no_cook`;
-- feature-uri de ingrediente: `has_pasta`, `has_rice`, `has_potato`, `has_tomato_base`, `has_cream_base`, `has_cheese`, `has_broth_base`, `has_mushroom`, `has_leafy_greens`, `has_beans_legumes`, `has_fruit`, `has_nuts`, `has_chocolate`, `has_tortilla`, `has_spicy_ingredient`, `has_asian_sauce`.
-
-### Cum functioneaza
-
-1. Retetele sunt filtrate dupa restrictiile alimentare ale utilizatorului.
-2. Fiecare reteta porneste cu probabilitate uniforma.
-3. Pentru fiecare raspuns, motorul calculeaza likelihood-ul fiecarei retete.
-4. Probabilitatile sunt actualizate in log-space pentru stabilitate numerica.
-5. Urmatoarea intrebare este aleasa dupa reducerea asteptata a entropiei.
-6. Sesiunea se opreste cand:
-   - intrebarile fixe au fost puse;
-   - entropia este suficient de mica;
-   - topul este stabil;
-   - s-a atins numarul maxim de intrebari.
-7. Rezultatele sunt intoarse ca lista de retete cu `match_score`.
-
-### Semantic reranking
-
-Aplicatia poate folosi embeddings pentru retete similare si reranking semantic. Textul unei retete este construit din nume, descriere, ingrediente, meal type, cuisine si alte campuri relevante. Embedding-ul are dimensiunea 384 si este generat cu modelul `all-MiniLM-L6-v2`.
-
-## Ingredient Explorer
-
-`Ingredient Explorer` foloseste doua surse:
-
-- ingredientele normalizate din `recipes.ingredients_clean`;
-- graful de co-occurenta din `ingredient_graph`.
-
-Flow:
-
-1. Utilizatorul cauta sau selecteaza un ingredient.
-2. Backend-ul verifica ingredientul in `ingredient_stats`.
-3. Backend-ul returneaza ingrediente asociate din `ingredient_graph`.
-4. Daca utilizatorul selecteaza mai multe ingrediente, backend-ul cauta retete care contin toate ingredientele selectate.
-5. Sugestiile urmatoare sunt calculate combinand frecventa in retetele potrivite si scorul PPMI.
-6. Recomandarile de retete sunt sortate dupa scor Jaccard intre ingredientele selectate si ingredientele retetei.
+Rezultatele recente au aratat ca `P_CORRECT=0.90, P_NOISE=0.05` este prea overconfident pentru datele curente. Zona `P_CORRECT=0.75` cu `P_NOISE` intre `0.07` si `0.10` este mai robusta, cu tradeoff intre acuratete si numar de intrebari.
 
 ## Configurare si rulare
 
-### Variabile de mediu backend
+### Backend `.env`
 
-Creeaza `backend/.env` pornind de la `backend/.env.example`:
+Fisier: `backend/.env`
 
 ```env
 SUPABASE_URL=
@@ -600,17 +806,7 @@ SECRET_KEY=
 ENVIRONMENT=development
 ```
 
-Descriere:
-
-| Variabila | Descriere |
-| --- | --- |
-| `SUPABASE_URL` | URL-ul proiectului Supabase |
-| `SUPABASE_KEY` | Cheia anon/publica Supabase |
-| `SUPABASE_SERVICE_KEY` | Cheia service-role pentru operatii administrative |
-| `SECRET_KEY` | Secret local folosit de aplicatie |
-| `ENVIRONMENT` | `development` sau `production` |
-
-Nu publica niciodata `backend/.env`.
+`SUPABASE_SERVICE_KEY` nu trebuie expus in frontend.
 
 ### Pornire backend
 
@@ -626,7 +822,7 @@ Health check:
 GET http://localhost:8000/health
 ```
 
-Documentatie Swagger in development:
+Swagger in development:
 
 ```text
 http://localhost:8000/docs
@@ -640,7 +836,7 @@ npm install
 npm start
 ```
 
-Comenzi disponibile:
+Comenzi:
 
 ```powershell
 npm run android
@@ -649,59 +845,23 @@ npm run web
 npm run lint
 ```
 
-URL-ul backend-ului este configurat in:
+URL-ul backend-ului este in:
 
 ```text
 frontend/recipe-match/constants/api.ts
 ```
 
-In development, aplicatia foloseste IP-ul LAN al masinii pe care ruleaza backend-ul, deoarece pe emulator/device `localhost` nu se refera mereu la host.
+Pe device sau emulator, `localhost` nu indica intotdeauna masina host. De aceea, in development se foloseste IP-ul LAN al calculatorului.
 
-## Scripturi utile
+## Note de productie
 
-### Precomputare embeddings
-
-```powershell
-cd backend
-.\venv\Scripts\Activate.ps1
-python scripts\precompute_embeddings.py
-```
-
-Scriptul calculeaza embeddings pentru retete si le salveaza in coloana `recipes.embedding`.
-
-### Precomputare graf ingrediente
-
-```powershell
-cd backend
-.\venv\Scripts\Activate.ps1
-python scripts\precompute_ingredient_graph.py
-```
-
-Scriptul construieste:
-
-- `ingredient_graph`
-- `ingredient_stats`
-
-pe baza ingredientelor normalizate din retete.
-
-## Observatii de productie
-
-- `backend/.env` contine secrete si trebuie sa ramana ignorat de Git.
-- `SUPABASE_SERVICE_KEY` nu trebuie expus niciodata in frontend.
-- In productie, CORS trebuie restrans la domeniul real al aplicatiei.
-- Sesiunile active de recomandare sunt tinute in memorie; la restartul backend-ului, sesiunile active se pierd.
-- Persistarea sesiunilor in `recommendation_sessions` este fire-and-forget si nu blocheaza raspunsul catre utilizator.
-- `recipe_interactions` este pregatit pentru personalizare mai avansata, dar personalizarea principala foloseste in prezent retetele salvate.
-- Pentru scalare, motorul de recomandare ar trebui mutat spre cache persistent sau job-uri separate daca numarul de retete creste mult.
-- `node_modules`, mediile virtuale, cache-urile si fisierele `.env` sunt excluse prin `.gitignore`.
-
-## Directii posibile de dezvoltare
-
-- personalizare mai buna folosind `recipe_interactions`;
-- meal planner saptamanal;
-- scoring nutritional;
-- liste de cumparaturi agregate pentru mai multe retete;
-- feedback explicit pe recomandari;
-- colectii smart generate automat;
-- analytics pentru calitatea recomandarilor;
-- panou admin pentru curatarea ingredientelor si retetelor.
+- `backend/.env` contine secrete si nu trebuie commit-uit.
+- `SUPABASE_SERVICE_KEY` ramane doar pe backend.
+- CORS trebuie restrans in productie.
+- Sesiunile active din `/recommendations` sunt in memorie si se pierd la restart.
+- `recommendation_sessions` pastreaza sumarul pentru profilare si analiza, nu starea completa runtime.
+- Modelul Hugging Face poate descarca/incarca greutati la prima folosire; warmup-ul de startup reduce blocajele in requesturile userului.
+- Pentru rate limits mai bune la Hugging Face, se poate seta `HF_TOKEN`.
+- `explorer_sessions` nu afecteaza sugestiile Explorer; afecteaza doar personalizarea For You.
+- Daca numarul de retete creste mult, incarcarea tuturor retetelor in memorie ar trebui inlocuita cu cache persistent, job-uri batch sau cautare indexata mai agresiv.
+- Algoritmii sunt calibrabili: `P_CORRECT`, `P_NOISE`, ponderile intrebarilor, pragurile de oprire si mixul semantic pot fi ajustate pe baza scripturilor din `backend/testari`.

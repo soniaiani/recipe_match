@@ -177,7 +177,6 @@ class RecQuestion(BaseModel):
 
 class RecSessionStartRequest(BaseModel):
     dietary: DietaryProfile | None = None
-    semantic_query: str | None = None
 
 
 class RecSessionStartResponse(BaseModel):
@@ -223,7 +222,7 @@ class RecAnswerResponse(BaseModel):
 
 class RecInteractionRequest(BaseModel):
     recipe_id: int
-    interaction_type: str  # "view" | "like" | "save" | "cook" | "skip"
+    interaction_type: str  # "view" | "save" | "cook" | "skip"
 
 
 class RecResultsResponse(BaseModel):

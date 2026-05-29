@@ -15,11 +15,14 @@ POSTERIOR_TEMPERATURE = 1.25
 STABILITY_TOP_K = 3
 STABILITY_MIN_OVERLAP = 2
 
-P_CORRECT = 0.90
+P_CORRECT = 0.75
 P_NOISE   = 0.05
 
 # Stop when H < log2(15) ≈ 3.9 bits (focused on ~15 candidates)
 ENTROPY_STOP_THRESHOLD = math.log2(50)
+DRINK_MIN_QUESTIONS_BEFORE_STOP = 10
+DRINK_ENTROPY_STOP_THRESHOLD = math.log2(250)
+DRINK_TOP10_PROB_STOP_THRESHOLD = 0.18
 
 # ── QUESTION BANK ─────────────────────────────────────────────────────────────
 CUISINE_OPTIONS   = ["italian", "asian", "mexican", "french", "mediterranean", "indian", "american", "other"]
@@ -154,7 +157,9 @@ def compute_feature_mi(recipes: list[dict[str, Any]]) -> dict[str, float]:
         qid: round(0.3 + (mi / max_mi) * 2.7, 4)
         for qid, mi in mi_scores.items()
     }
-    normalized["meal_type"] = 3.0
+    normalized["meal_type"] = 2.0
+    normalized["cuisine"] = 1.8
+    normalized["protein_type"] = 1.6
     return normalized
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -264,8 +269,17 @@ class BayesianSession:
         p = self.probs()
         top_k_prob = float(p[p.argsort()[-10:]].sum())
         concentrated = top_k_prob > 0.25
+        stable = self.is_top_stable()
 
-        conditions_met = sum([entropy_ok, concentrated, self.is_top_stable()])
+        if self.answers.get("meal_type") == "drink" and self.q >= DRINK_MIN_QUESTIONS_BEFORE_STOP:
+            relaxed_entropy_ok = self.entropy() < DRINK_ENTROPY_STOP_THRESHOLD
+            relaxed_concentrated = top_k_prob > DRINK_TOP10_PROB_STOP_THRESHOLD
+            if relaxed_entropy_ok:
+                return True
+            if sum([relaxed_entropy_ok, relaxed_concentrated, stable]) >= 2:
+                return True
+
+        conditions_met = sum([entropy_ok, concentrated, stable])
         return conditions_met >= 2
 
     def is_top_stable(self) -> bool:
@@ -296,7 +310,6 @@ class BayesianSession:
             possible_answers = ["yes", "no"]
 
         expected_h = 0.0
-        w = self.weights.get(question["id"], 1.0)
 
         for answer in possible_answers:
             likelihoods = np.array([
@@ -307,7 +320,7 @@ class BayesianSession:
             if p_answer < 1e-12:
                 continue
 
-            log_updated = np.log(p_relevant + 1e-10) + w * np.log(likelihoods + 1e-10)
+            log_updated = np.log(p_relevant + 1e-10) + np.log(likelihoods + 1e-10)
             if POSTERIOR_TEMPERATURE > 1.0:
                 log_updated /= POSTERIOR_TEMPERATURE
             log_updated -= log_updated.max()
@@ -426,13 +439,6 @@ def select_next_question(session: BayesianSession) -> dict[str, Any] | None:
         q for q in _ADAPTIVE_QS
         if q["id"] not in session.asked_ids and q["id"] not in excluded_ids
     ]
-    if getattr(session, "semantic_query", None):
-        balanced_candidates = [
-            q for q in candidates
-            if q["type"] != "boolean" or _semantic_pool_question_is_useful(session, q)
-        ]
-        if balanced_candidates:
-            candidates = balanced_candidates
 
     if not candidates:
         return None
@@ -459,22 +465,6 @@ def select_next_question(session: BayesianSession) -> dict[str, Any] | None:
         return max(candidates, key=prevalence_boosted_score)
 
     return max(candidates, key=lambda q: session.expected_entropy_reduction(q))
-
-
-def _semantic_pool_question_is_useful(session: BayesianSession, question: dict[str, Any]) -> bool:
-    p = session.probs()
-    uniform = 1.0 / session.n
-    relevant_idx = np.where(p > uniform * 0.01)[0]
-    if len(relevant_idx) < 10:
-        relevant_idx = p.argsort()[-min(100, session.n):]
-    if len(relevant_idx) == 0:
-        return True
-
-    prevalence = sum(
-        1 for idx in relevant_idx
-        if get_feature_value_bool(session.recipes[int(idx)], question)
-    ) / len(relevant_idx)
-    return 0.10 < prevalence < 0.85
 
 
 # ── SESSION RECONSTRUCTION ────────────────────────────────────────────────────
