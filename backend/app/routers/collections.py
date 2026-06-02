@@ -1,8 +1,15 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.database import get_supabase_admin
+
+from fastapi import APIRouter, Depends, status
+
 from app.middleware.auth import get_user_id
-from app.models.schemas import ApiResponse, Collection, CollectionCreate
+from app.models.collections import Collection, CollectionCreate
+from app.models.common import ApiResponse
+from app.services.collection_service import (
+    create_user_collection,
+    delete_user_collection,
+    list_user_collections,
+)
 
 router = APIRouter(prefix="/collections", tags=["collections"])
 
@@ -10,26 +17,16 @@ router = APIRouter(prefix="/collections", tags=["collections"])
 @router.get("", response_model=ApiResponse[list[Collection]])
 async def list_collections(user_id: str = Depends(get_user_id)):
     """List all collections for the current user."""
-    admin = get_supabase_admin()
-    res = admin.table("collections").select("*").eq("user_id", user_id).order("created_at").execute()
-    return ApiResponse(data=[Collection(**c) for c in (res.data or [])])
+    return list_user_collections(user_id)
 
 
 @router.post("", response_model=ApiResponse[Collection], status_code=status.HTTP_201_CREATED)
 async def create_collection(body: CollectionCreate, user_id: str = Depends(get_user_id)):
     """Create a new collection."""
-    admin = get_supabase_admin()
-    res = admin.table("collections").insert({"user_id": user_id, "name": body.name}).execute()
-    if not res.data:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create collection")
-    return ApiResponse(data=Collection(**res.data[0]))
+    return create_user_collection(body, user_id)
 
 
 @router.delete("/{collection_id}", response_model=ApiResponse[None])
 async def delete_collection(collection_id: str, user_id: str = Depends(get_user_id)):
     """Delete a collection (recipes are unlinked, not deleted)."""
-    admin = get_supabase_admin()
-    res = admin.table("collections").delete().eq("id", collection_id).eq("user_id", user_id).execute()
-    if not res.data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found")
-    return ApiResponse(data=None)
+    return delete_user_collection(collection_id, user_id)

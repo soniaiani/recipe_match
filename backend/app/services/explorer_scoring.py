@@ -1,58 +1,22 @@
+"""Statistical scoring helpers for Ingredient Explorer suggestions."""
 from __future__ import annotations
 
-import json
 import math
 from statistics import mean
-from typing import Any, Iterable
+from typing import Iterable
 
-MAX_EXPAND_CANDIDATES = 250
+from app.services.explorer_common import (
+    MAX_EXPAND_CANDIDATES,
+    PANTRY_HARD,
+    PANTRY_SOFT,
+    normalize_ingredient,
+    normalize_many,
+    parse_ingredients,
+)
 
 EXPAND_PPMI_SHIFT_K = 1.0
 EXPAND_TFIDF_ALPHA = 0.8
 EXPAND_LOG_K = math.log2(EXPAND_PPMI_SHIFT_K)
-
-PANTRY_HARD = {
-    "salt", "pepper", "black pepper", "water", "oil",
-    "olive oil", "vegetable oil", "cooking spray",
-}
-
-PANTRY_SOFT = {
-    "sugar", "all-purpose flour", "butter", "milk", "egg",
-}
-
-
-def normalize_ingredient(value: Any) -> str | None:
-    if value is None:
-        return None
-    normalized = str(value).lower().strip()
-    return normalized or None
-
-
-def normalize_many(values: list[str]) -> list[str]:
-    seen: set[str] = set()
-    output: list[str] = []
-    for value in values:
-        normalized = normalize_ingredient(value)
-        if normalized and normalized not in seen:
-            seen.add(normalized)
-            output.append(normalized)
-    return output
-
-
-def parse_ingredients(raw: Any) -> set[str]:
-    if not raw:
-        return set()
-    try:
-        parsed = json.loads(raw) if isinstance(raw, str) else raw
-    except json.JSONDecodeError:
-        return set()
-    if not isinstance(parsed, list):
-        return set()
-    return {
-        normalized
-        for item in parsed
-        if (normalized := normalize_ingredient(item))
-    }
 
 
 def candidate_counts_from_ingredient_sets(
@@ -60,6 +24,7 @@ def candidate_counts_from_ingredient_sets(
     selected_set: set[str],
     min_count: int | None = None,
     exclude_soft_pantry: bool = False,
+    excluded_ingredients: list[str] | None = None,
 ) -> dict[str, int]:
     counts: dict[str, int] = {}
     for ingredients in matching_ingredients:
@@ -71,6 +36,7 @@ def candidate_counts_from_ingredient_sets(
             counts,
             min_count=min_count,
             exclude_soft_pantry=exclude_soft_pantry,
+            excluded_ingredients=excluded_ingredients,
         )
 
     ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
@@ -81,12 +47,15 @@ def filter_candidate_counts_by_context(
     candidate_counts: dict[str, int],
     min_count: int,
     exclude_soft_pantry: bool,
+    excluded_ingredients: list[str] | None = None,
 ) -> dict[str, int]:
+    excluded = set(excluded_ingredients or [])
     return {
         ingredient: count
         for ingredient, count in candidate_counts.items()
         if count >= min_count
         and ingredient not in PANTRY_HARD
+        and ingredient not in excluded
         and (not exclude_soft_pantry or ingredient not in PANTRY_SOFT)
     }
 
@@ -97,7 +66,7 @@ def min_max_normalize(values: dict[str, float]) -> dict[str, float]:
     lower = min(values.values())
     upper = max(values.values())
     if upper <= lower:
-        return {key: 1.0 for key in values}
+        return {key: 0.0 for key in values}
     return {
         key: (value - lower) / (upper - lower)
         for key, value in values.items()
