@@ -29,6 +29,10 @@ backend/venv/
 backend/**/*.sqlite
 backend/**/*.sqlite3
 backend/**/*.db
+backend/models/*.pkl
+backend/models/*.joblib
+!backend/models/explorer_ltr_v0_random_base.joblib
+!backend/models/explorer_ltr_final_no_graph.joblib
 
 # Node / Expo
 node_modules/
@@ -60,3 +64,5 @@ Thumbs.db
 evaluation_results*.json
 backend/testari/evaluation_results*.json
 backend/testari/no_skip_user_results.json
+backend/testari/
+licenta_claude_context/

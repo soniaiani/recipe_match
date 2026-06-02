@@ -14,7 +14,7 @@ from app.database import get_supabase_admin
 from app.middleware.auth import get_current_user
 from app.models.schemas import ApiResponse, ForYouResponse, RecipeSummary
 from app.recommender.embeddings import encode_text
-from app.recommender.filters import filter_excluded_ingredients
+from app.recommender.filters import filter_excluded_ingredients, normalize_excluded_ingredients
 
 router = APIRouter(prefix="/foryou", tags=["foryou"])
 
@@ -481,8 +481,13 @@ def build_answers_profile(user_id: str, admin: Any) -> dict[str, Any]:
     }
 
 
-def build_explorer_intents(user_id: str, admin: Any) -> list[list[str]]:
+def build_explorer_intents(
+    user_id: str,
+    admin: Any,
+    excluded_ingredients: Any = None,
+) -> list[list[str]]:
     """Extract frequent Explorer ingredient associations as separate intents."""
+    excluded = set(normalize_excluded_ingredients(excluded_ingredients))
     try:
         rows = (
             admin.table("explorer_sessions")
@@ -510,8 +515,11 @@ def build_explorer_intents(user_id: str, admin: Any) -> list[list[str]]:
             str(ingredient).strip().lower()
             for ingredient in (row.get("chain") or [])
             if str(ingredient).strip()
+            and str(ingredient).strip().lower() not in excluded
         ]
         unique_chain = sorted(set(chain))
+        if not unique_chain:
+            continue
         for ingredient in unique_chain:
             ingredient_counts[ingredient] += 1
         for left, right in combinations(unique_chain, 2):
@@ -562,11 +570,15 @@ def build_explorer_intents(user_id: str, admin: Any) -> list[list[str]]:
     return intents[:_MAX_EXPLORER_INTENTS]
 
 
-def build_explorer_profile(user_id: str, admin: Any) -> list[str]:
+def build_explorer_profile(
+    user_id: str,
+    admin: Any,
+    excluded_ingredients: Any = None,
+) -> list[str]:
     """Compatibility helper returning flattened frequent Explorer ingredients."""
     seen: set[str] = set()
     ingredients: list[str] = []
-    for intent in build_explorer_intents(user_id, admin):
+    for intent in build_explorer_intents(user_id, admin, excluded_ingredients):
         for ingredient in intent:
             if ingredient not in seen:
                 seen.add(ingredient)
@@ -1046,7 +1058,11 @@ async def for_you(request: Request, payload: dict = Depends(get_current_user)):
 
     n_interactions = int(interaction_profile.get("n_interactions") or 0)
     n_sessions = int(answers_profile.get("n_sessions") or 0)
-    explorer_intents = build_explorer_intents(user_id, admin)
+    explorer_intents = build_explorer_intents(
+        user_id,
+        admin,
+        meta.get("excluded_ingredients", []),
+    )
     explorer_ingredients = [
         ingredient
         for intent in explorer_intents

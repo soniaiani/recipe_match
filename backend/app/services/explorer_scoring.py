@@ -58,13 +58,22 @@ def parse_ingredients(raw: Any) -> set[str]:
 def candidate_counts_from_ingredient_sets(
     matching_ingredients: Iterable[set[str]],
     selected_set: set[str],
+    min_count: int | None = None,
+    exclude_soft_pantry: bool = False,
 ) -> dict[str, int]:
     counts: dict[str, int] = {}
     for ingredients in matching_ingredients:
         for ingredient in ingredients - selected_set:
             counts[ingredient] = counts.get(ingredient, 0) + 1
 
-    ranked = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+    if min_count is not None:
+        counts = filter_candidate_counts_by_context(
+            counts,
+            min_count=min_count,
+            exclude_soft_pantry=exclude_soft_pantry,
+        )
+
+    ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
     return dict(ranked[:MAX_EXPAND_CANDIDATES])
 
 
@@ -88,7 +97,7 @@ def min_max_normalize(values: dict[str, float]) -> dict[str, float]:
     lower = min(values.values())
     upper = max(values.values())
     if upper <= lower:
-        return {key: 0.0 for key in values}
+        return {key: 1.0 for key in values}
     return {
         key: (value - lower) / (upper - lower)
         for key, value in values.items()
@@ -103,7 +112,7 @@ def score_start_candidates(
         (candidate, count / n_matching)
         for candidate, count in candidate_counts.items()
     ]
-    scored.sort(key=lambda item: item[1], reverse=True)
+    scored.sort(key=lambda item: (-item[1], item[0]))
     return scored
 
 
@@ -137,5 +146,5 @@ def score_expand_candidates(
         )
         for candidate in candidate_counts
     ]
-    scored.sort(key=lambda item: item[1], reverse=True)
+    scored.sort(key=lambda item: (-item[1], item[0]))
     return scored
