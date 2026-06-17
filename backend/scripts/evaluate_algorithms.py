@@ -26,20 +26,22 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-import app.recommender.engine
-importlib.reload(app.recommender.engine)
+import app.services.recommendations.bayesian
+importlib.reload(app.services.recommendations.bayesian)
 
 from app.database import get_supabase_admin
-from app.recommender.engine import (
+from app.services.recommendations.bayesian.config import (
     MAX_QUESTIONS,
-    BayesianSession,
     QUESTION_BANK,
     _ADAPTIVE_QS,
     _FIXED_QS,
-    compute_feature_mi,
     question_by_id,
+)
+from app.services.recommendations.bayesian.features import compute_feature_mi
+from app.services.recommendations.bayesian.questions import (
     select_next_question,
 )
+from app.services.recommendations.bayesian.session import BayesianSession
 
 RANDOM_SEED = 42
 TOP_N_EVAL = 10

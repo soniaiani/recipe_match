@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import Request
 
-from app.recommender.filters import filter_excluded_ingredients
+from app.services.recommendations.filters import filter_excluded_ingredients
 _CATEGORICAL_FEATURES = ("meal_type", "protein_type", "cuisine")
 _BOOLEAN_FEATURES = (
     "is_spicy",

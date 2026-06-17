@@ -14,7 +14,8 @@ if hasattr(sys.stdout, "reconfigure"):
 import itertools
 import numpy as np
 from app.database import get_supabase_admin
-from app.recommender.engine import _ADAPTIVE_QS, get_feature_value_bool
+from app.services.recommendations.bayesian.config import _ADAPTIVE_QS
+from app.services.recommendations.bayesian.features import get_feature_value_bool
 
 PAGE_SIZE = 1000
 

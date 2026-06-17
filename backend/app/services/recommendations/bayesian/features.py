@@ -5,7 +5,7 @@ import math
 from collections import Counter
 from typing import Any
 
-from app.recommender.bayesian.config import (
+from app.services.recommendations.bayesian.config import (
     ADAPTIVE_QUESTIONS,
     P_CORRECT,
     P_NOISE,

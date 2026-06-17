@@ -25,7 +25,7 @@ def initialize_recommendation_state(app: FastAPI) -> None:
     """Load startup state used by Bayesian, Explorer and For You engines."""
     try:
         from app.database import get_supabase_admin
-        from app.recommender.engine import compute_feature_mi
+        from app.services.recommendations.bayesian.features import compute_feature_mi
 
         admin = get_supabase_admin()
         recipes = _fetch_all_recipes(admin)

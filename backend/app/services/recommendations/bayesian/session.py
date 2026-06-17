@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from app.recommender.bayesian.config import (
+from app.services.recommendations.bayesian.config import (
     DRINK_ENTROPY_STOP_THRESHOLD,
     DRINK_MIN_QUESTIONS_BEFORE_STOP,
     DRINK_TOP10_PROB_STOP_THRESHOLD,
@@ -20,7 +20,7 @@ from app.recommender.bayesian.config import (
     TOP_N,
     question_by_id,
 )
-from app.recommender.bayesian.features import (
+from app.services.recommendations.bayesian.features import (
     compute_likelihood,
     get_feature_value_bool,
 )

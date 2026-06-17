@@ -5,14 +5,14 @@ from typing import Any
 
 import numpy as np
 
-from app.recommender.bayesian.config import (
+from app.services.recommendations.bayesian.config import (
     ADAPTIVE_QUESTIONS,
     FIXED_QUESTIONS,
     excluded_question_ids,
     question_by_id,
 )
-from app.recommender.bayesian.features import get_feature_value_bool
-from app.recommender.bayesian.session import BayesianSession
+from app.services.recommendations.bayesian.features import get_feature_value_bool
+from app.services.recommendations.bayesian.session import BayesianSession
 
 
 def select_next_question(session: BayesianSession) -> dict[str, Any] | None:

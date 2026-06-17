@@ -6,7 +6,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 import numpy as np
 from app.database import get_supabase_admin
-from app.recommender.engine import restore_session, compute_feature_mi
+from app.services.recommendations.bayesian.features import compute_feature_mi
+from app.services.recommendations.bayesian.questions import restore_session
 
 admin = get_supabase_admin()
 recipes = []

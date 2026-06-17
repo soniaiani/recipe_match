@@ -24,14 +24,16 @@ from app.models.recommendations import (
     RecSessionStartRequest,
     RecSessionStartResponse,
 )
-from app.recommender.engine import (
-    BayesianSession,
+from app.services.recommendations.bayesian.config import (
     MAX_QUESTIONS,
     QUESTION_BANK,
+)
+from app.services.recommendations.bayesian.questions import (
     restore_session,
     select_next_question,
 )
-from app.recommender.filters import filter_excluded_ingredients
+from app.services.recommendations.bayesian.session import BayesianSession
+from app.services.recommendations.filters import filter_excluded_ingredients
 
 _SESSION_TTL = 3600
 _VALID_INTERACTION_TYPES = {"view", "save", "cook", "skip"}

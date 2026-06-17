@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 from itertools import combinations
 from typing import Any
 
-from app.recommender.filters import normalize_excluded_ingredients
+from app.services.recommendations.filters import normalize_excluded_ingredients
 from app.services.foryou.common import (
     ALL_PROFILE_FEATURES,
     BOOLEAN_FEATURES,

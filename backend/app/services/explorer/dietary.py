@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from app.recommender.filters import (
+from app.services.recommendations.filters import (
     normalize_excluded_ingredients,
     recipe_uses_excluded_ingredient,
 )

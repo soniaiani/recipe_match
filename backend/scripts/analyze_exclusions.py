@@ -5,7 +5,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from app.database import get_supabase_admin
-from app.recommender.engine import _ADAPTIVE_QS, get_feature_value_bool
+from app.services.recommendations.bayesian.config import _ADAPTIVE_QS
+from app.services.recommendations.bayesian.features import get_feature_value_bool
 
 MEAL_TYPES = ["dessert", "drink", "breakfast", "soup", "snack", "lunch_dinner", "appetizer", "salad_side", "condiment"]
 def load_all_recipes() -> list[dict]:
