@@ -9,18 +9,18 @@ from app.database import get_supabase_admin
 from app.models.common import ApiResponse
 from app.models.foryou import ForYouResponse
 from app.models.recipes import RecipeSummary
-from app.services.foryou_common import (
+from app.services.foryou.common import (
     RECOMMENDATION_COUNT,
     hard_filter,
     load_recipes,
 )
-from app.services.foryou_profiles import (
+from app.services.foryou.profiles import (
     build_answers_profile,
     build_explorer_intents,
     build_interaction_profile,
     build_semantic_profiles,
 )
-from app.services.foryou_ranking import (
+from app.services.foryou.ranking import (
     compute_rank_scores,
     compute_weights,
     load_popular_recipes,

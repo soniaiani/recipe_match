@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi, ApiError, DietaryProfile, UserProfile } from '@/services/api';
+import { authApi, DietaryProfile, UserProfile } from '@/services/api';
 
 const TOKEN_KEY = 'auth_token';
 

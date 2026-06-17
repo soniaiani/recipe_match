@@ -13,7 +13,7 @@ from app.models.recommendations import (
     RecSessionStartRequest,
     RecSessionStartResponse,
 )
-from app.services.recommendation_service import (
+from app.services.recommendations.service import (
     delete_recipe_interaction,
     get_recommendation_results,
     record_recipe_interaction,

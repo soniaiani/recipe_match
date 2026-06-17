@@ -9,7 +9,7 @@ from app.models.recipes import (
     ShoppingListResponse,
     SimilarRecipesResponse,
 )
-from app.services.recipe_service import (
+from app.services.recipes.service import (
     get_ingredient_suggestion_response,
     get_recipe_detail_response,
     get_shopping_list_response,

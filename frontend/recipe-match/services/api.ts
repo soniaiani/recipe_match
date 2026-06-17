@@ -90,6 +90,65 @@ export interface IngredientSuggestionsResponse {
   ingredients: string[];
 }
 
+export interface TasteCard {
+  title: string;
+  text: string;
+  traits: string[];
+  ingredients: string[];
+  recipes: string[];
+}
+
+export interface TasteAttributeTrait {
+  name: string;
+  global_recipe_count: number;
+  prevalence: number;
+  global_prevalence: number;
+  lift: number;
+  score: number;
+  is_globally_common: boolean;
+}
+
+export interface TasteCategoricalTrait {
+  value: string;
+  prevalence: number;
+  global_prevalence: number;
+  lift: number;
+  is_distinctive: boolean;
+}
+
+export interface TasteCluster {
+  cluster_id: number;
+  weight: number;
+  similarity: number;
+  dominant_cuisine: string | null;
+  dominant_meal_type: string | null;
+  dominant_protein_type: string | null;
+  top_ingredients: string[];
+  top_ingredient_traits: TasteAttributeTrait[];
+  top_boolean_traits: TasteAttributeTrait[];
+  categorical_traits: Record<string, TasteCategoricalTrait>;
+  representative_recipes: string[];
+}
+
+export interface TasteProfileResponse {
+  status: 'ready' | 'insufficient_data' | 'unavailable';
+  compact_summary: string | null;
+  description: string | null;
+  taste_cards: TasteCard[];
+  top_clusters: TasteCluster[];
+  generated_at: string | null;
+  source: 'cache' | 'gemini' | 'fallback' | 'none';
+}
+
+export interface TasteClusterRecipes {
+  cluster_id: number;
+  recipes: RecipeSummary[];
+}
+
+export interface TasteProfileRecipesResponse {
+  clusters: TasteClusterRecipes[];
+}
+
 // ---------------------------------------------------------------------------
 // HTTP client
 // ---------------------------------------------------------------------------
@@ -118,12 +177,19 @@ async function request<T>(
   }
 
   const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  const body = await res.json() as { data: T; error: string | null };
+  const body = await res.json() as {
+    data?: T;
+    error?: string | null;
+    detail?: string | { msg?: string }[];
+  };
 
   if (!res.ok || body.error) {
-    throw new ApiError(res.status, body.error ?? `HTTP ${res.status}`);
+    const detail = Array.isArray(body.detail)
+      ? body.detail.map(item => item.msg).filter(Boolean).join(', ')
+      : body.detail;
+    throw new ApiError(res.status, body.error ?? detail ?? `HTTP ${res.status}`);
   }
-  return body.data;
+  return body.data as T;
 }
 
 // ---------------------------------------------------------------------------
@@ -218,6 +284,18 @@ export const savedApi = {
 export const forYouApi = {
   get: () =>
     request<{ recipes: RecipeSummary[] }>('/foryou'),
+
+  tasteProfile: () =>
+    request<TasteProfileResponse>('/foryou/taste-profile'),
+
+  tasteProfileRecipes: (excludeRecipeIds: number[] = []) => {
+    const params = new URLSearchParams();
+    excludeRecipeIds.forEach(id => params.append('exclude_recipe_ids', String(id)));
+    const query = params.toString();
+    return request<TasteProfileRecipesResponse>(
+      `/foryou/taste-profile/recipes${query ? `?${query}` : ''}`,
+    );
+  },
 };
 
 // ---------------------------------------------------------------------------

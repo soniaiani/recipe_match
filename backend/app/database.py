@@ -3,9 +3,8 @@ from supabase import create_client, Client
 from app.config import get_settings
 
 
-@lru_cache
 def get_supabase() -> Client:
-    """Anon client — used for auth and RLS-protected operations."""
+    """Create an isolated anon client for stateful auth operations."""
     settings = get_settings()
     return create_client(settings.supabase_url, settings.supabase_key)
 

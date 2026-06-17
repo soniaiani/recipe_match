@@ -46,6 +46,7 @@ export default function RecipeDetailScreen() {
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarRecipes, setSimilarRecipes] = useState<SimilarRecipe[]>([]);
   const [cooked, setCooked] = useState(false);
+  const [cookUpdating, setCookUpdating] = useState(false);
   const viewedRecipeId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -117,7 +118,8 @@ export default function RecipeDetailScreen() {
   };
 
   const handleCooked = async () => {
-    if (!recipe) return;
+    if (!recipe || cookUpdating) return;
+    setCookUpdating(true);
     try {
       if (cooked) {
         await recommendationApi.deleteInteraction(recipe.id, 'cook');
@@ -128,6 +130,8 @@ export default function RecipeDetailScreen() {
       setCooked(true);
     } catch {
       Alert.alert('Error', cooked ? 'Could not undo cooked status' : 'Could not log this recipe as cooked');
+    } finally {
+      setCookUpdating(false);
     }
   };
 
@@ -249,8 +253,13 @@ export default function RecipeDetailScreen() {
               <Text style={styles.actionTileText}>List</Text>
             </Pressable>
             <Pressable
-              style={[styles.actionTile, cooked && styles.actionBtnCooked]}
+              style={[
+                styles.actionTile,
+                cooked && styles.actionBtnCooked,
+                cookUpdating && styles.actionTileDisabled,
+              ]}
               onPress={handleCooked}
+              disabled={cookUpdating}
             >
               <Ionicons
                 name={cooked ? 'checkmark-circle' : 'flame-outline'}
@@ -446,6 +455,7 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: Colors.surface,
   },
+  actionTileDisabled: { opacity: 0.55 },
   actionTilePrimary: { borderColor: Colors.primary },
   actionBtnActive: { backgroundColor: Colors.primary },
   actionTilePrimaryText: { color: Colors.primary, fontWeight: '900', fontSize: 15 },

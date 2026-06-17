@@ -7,7 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from app.config import get_settings
 from app.routers import auth, collections, explorer, foryou, recipes, recommendations, saved
-from app.services.startup_service import initialize_recommendation_state
+from app.services.startup import initialize_recommendation_state
 
 settings = get_settings()
 

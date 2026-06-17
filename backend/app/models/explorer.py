@@ -17,7 +17,6 @@ class ExplorerExpandRequest(BaseModel):
 class ExplorerSuggestion(BaseModel):
     ingredient: str
     score: float | None = None
-    ppmi_score: float | None = None
 
 
 class ExplorerStartResponse(BaseModel):

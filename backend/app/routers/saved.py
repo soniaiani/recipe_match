@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status
 from app.middleware.auth import get_user_id
 from app.models.common import ApiResponse
 from app.models.saved import SaveRecipeRequest, SavedRecipe
-from app.services.saved_service import (
+from app.services.saved.service import (
     list_saved_response,
     save_recipe_response,
     saved_in_collection_response,

@@ -4,7 +4,6 @@ import { API_BASE_URL } from '@/constants/api';
 export type Suggestion = {
   ingredient: string;
   score?: number;
-  ppmi_score?: number;
   scoring_method?: 'statistical' | 'ml_ltr' | string;
 };
 

@@ -26,6 +26,7 @@ def get_current_user(
             "sub": response.user.id,
             "email": response.user.email,
             "user_metadata": response.user.user_metadata or {},
+            "access_token": token,
         }
     except Exception:
         raise HTTPException(

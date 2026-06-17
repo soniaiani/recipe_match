@@ -5,7 +5,7 @@ import math
 from typing import Any
 
 from app.database import get_supabase_admin
-from app.services.explorer_common import RECIPE_FIELDS, parse_ingredients
+from app.services.explorer.common import RECIPE_FIELDS, parse_ingredients
 
 _RECIPE_INGREDIENT_CACHE: list[tuple[dict[str, Any], set[str]]] | None = None
 _RECIPE_DETAIL_CACHE: list[tuple[dict[str, Any], set[str]]] | None = None

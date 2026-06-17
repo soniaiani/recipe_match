@@ -72,10 +72,11 @@ def login_user(body: LoginRequest) -> ApiResponse[AuthResponse]:
     ))
 
 
-def logout_user() -> ApiResponse[None]:
-    client = get_supabase()
+def logout_user(payload: dict) -> ApiResponse[None]:
+    token = payload.get("access_token")
     try:
-        client.auth.sign_out()
+        if token:
+            get_supabase_admin().auth.admin.sign_out(token, scope="local")
     except Exception:
         pass
     return ApiResponse(data=None)

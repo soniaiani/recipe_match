@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status
 from app.middleware.auth import get_user_id
 from app.models.collections import Collection, CollectionCreate
 from app.models.common import ApiResponse
-from app.services.collection_service import (
+from app.services.collections.service import (
     create_user_collection,
     delete_user_collection,
     list_user_collections,

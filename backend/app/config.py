@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     supabase_service_key: str
     secret_key: str
     environment: str = "development"
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.0-flash-001"
+    gemini_fallback_models: str = "gemini-2.5-flash-lite"
+    gemini_timeout_seconds: float = 30.0
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

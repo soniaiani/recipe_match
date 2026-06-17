@@ -12,7 +12,13 @@ from app.models.explorer import ExplorerSuggestion
 
 _EXPLORER_LTR_MODEL: Any | None = None
 _EXPLORER_LTR_FEATURE_COLUMNS: list[str] = []
+_BACKEND_DIR = Path(__file__).resolve().parents[3]
 _EXPLORER_LTR_MODEL_PATH = (
+    _BACKEND_DIR
+    / "models"
+    / "explorer_ltr_final_no_graph.joblib"
+)
+_LEGACY_EXPLORER_LTR_MODEL_PATH = (
     Path(__file__).resolve().parents[2]
     / "models"
     / "explorer_ltr_final_no_graph.joblib"
@@ -24,12 +30,17 @@ def warm_explorer_ltr_model() -> None:
     if _EXPLORER_LTR_MODEL is not None:
         return
 
-    if not _EXPLORER_LTR_MODEL_PATH.exists():
+    model_path = (
+        _EXPLORER_LTR_MODEL_PATH
+        if _EXPLORER_LTR_MODEL_PATH.exists()
+        else _LEGACY_EXPLORER_LTR_MODEL_PATH
+    )
+    if not model_path.exists():
         print(f"[explorer] LTR model not found at {_EXPLORER_LTR_MODEL_PATH}; using statistical fallback.")
         return
 
     try:
-        artifact = joblib.load(_EXPLORER_LTR_MODEL_PATH)
+        artifact = joblib.load(model_path)
         _EXPLORER_LTR_MODEL = artifact["model"]
         _EXPLORER_LTR_FEATURE_COLUMNS = list(artifact["feature_columns"])
         print(

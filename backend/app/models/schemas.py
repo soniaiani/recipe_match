@@ -14,7 +14,7 @@ from app.models.auth import (
 )
 from app.models.collections import Collection, CollectionCreate
 from app.models.common import ApiResponse
-from app.models.foryou import ForYouResponse
+from app.models.foryou import ForYouResponse, TasteCard, TasteCluster, TasteProfileResponse
 from app.models.recipes import (
     IngredientSuggestionsResponse,
     RecipeDetail,
@@ -62,5 +62,8 @@ __all__ = [
     "ShoppingListResponse",
     "SimilarRecipe",
     "SimilarRecipesResponse",
+    "TasteCard",
+    "TasteCluster",
+    "TasteProfileResponse",
     "UserProfile",
 ]

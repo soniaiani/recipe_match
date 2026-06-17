@@ -15,6 +15,24 @@ _SUMMARY_FIELDS = (
 _SAVE_INTERACTION_WEIGHT = 2.0
 
 
+def _require_owned_collection(collection_id: str, user_id: str) -> str:
+    admin = get_supabase_admin()
+    result = (
+        admin.table("collections")
+        .select("id")
+        .eq("id", collection_id)
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Collection not found",
+        )
+    return collection_id
+
+
 def _get_or_create_default_collection(user_id: str) -> str:
     admin = get_supabase_admin()
     res = admin.table("collections").select("id").eq("user_id", user_id).eq("name", "Saved").execute()
@@ -49,7 +67,11 @@ def _saved_recipe_from_row(row: dict, include_recipe: bool = False) -> SavedReci
 
 def save_recipe_response(body: SaveRecipeRequest, user_id: str) -> ApiResponse[SavedRecipe]:
     admin = get_supabase_admin()
-    collection_id = body.collection_id or _get_or_create_default_collection(user_id)
+    collection_id = (
+        _require_owned_collection(body.collection_id, user_id)
+        if body.collection_id
+        else _get_or_create_default_collection(user_id)
+    )
 
     try:
         res = admin.table("saved_recipes").insert({
@@ -81,6 +103,15 @@ def unsave_recipe_response(recipe_id: int, user_id: str) -> ApiResponse[None]:
     res = admin.table("saved_recipes").delete().eq("user_id", user_id).eq("recipe_id", recipe_id).execute()
     if not res.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Saved recipe not found")
+    (
+        admin.table("recipe_interactions")
+        .delete()
+        .eq("user_id", user_id)
+        .eq("recipe_id", recipe_id)
+        .eq("interaction_type", "save")
+        .execute()
+    )
+    admin.table("user_taste_profiles").delete().eq("user_id", user_id).execute()
     return ApiResponse(data=None)
 
 

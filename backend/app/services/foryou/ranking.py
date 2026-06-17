@@ -5,7 +5,7 @@ from collections import Counter
 from typing import Any
 
 from app.recommender.embeddings import encode_text
-from app.services.foryou_common import (
+from app.services.foryou.common import (
     BOOLEAN_FEATURES,
     CANDIDATE_POOL_LIMIT,
     CATEGORICAL_FEATURES,

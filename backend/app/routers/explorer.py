@@ -13,7 +13,7 @@ from app.models.explorer import (
     ExplorerStartResponse,
 )
 from app.models.common import ApiResponse
-from app.services.explorer_service import (
+from app.services.explorer.service import (
     expand_explorer_session,
     recommend_recipes_from_ingredients,
     search_ingredient_names,

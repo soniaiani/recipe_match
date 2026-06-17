@@ -8,7 +8,7 @@ from itertools import combinations
 from typing import Any
 
 from app.recommender.filters import normalize_excluded_ingredients
-from app.services.foryou_common import (
+from app.services.foryou.common import (
     ALL_PROFILE_FEATURES,
     BOOLEAN_FEATURES,
     BOOLEAN_TEXT,
@@ -229,7 +229,21 @@ def _collect_profile_events(
         if event:
             _append_profile_event(events, recent_events, event, rank)
 
-    return events, recent_events
+    return _strongest_events_per_recipe(events), _strongest_events_per_recipe(recent_events)
+
+
+def _strongest_events_per_recipe(
+    events: list[tuple[dict[str, Any], float]],
+) -> list[tuple[dict[str, Any], float]]:
+    strongest: dict[int, tuple[dict[str, Any], float]] = {}
+    for recipe, weight in events:
+        recipe_id = recipe.get("id")
+        if recipe_id is None:
+            continue
+        current = strongest.get(int(recipe_id))
+        if current is None or weight > current[1]:
+            strongest[int(recipe_id)] = (recipe, weight)
+    return list(strongest.values())
 
 
 def _interaction_event(row: dict[str, Any], rank: int) -> tuple[dict[str, Any], float] | None:

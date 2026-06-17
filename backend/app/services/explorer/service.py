@@ -1,5 +1,4 @@
 from __future__ import annotations
-import math
 from datetime import datetime, timezone
 from typing import Any
 
@@ -17,39 +16,33 @@ from app.models.explorer import (
     ExplorerSuggestion,
 )
 from app.models.common import ApiResponse
-from app.services.explorer_cache import (
+from app.services.explorer.cache import (
     ingredient_idf,
     recipe_detail_rows,
     recipe_ingredient_rows,
     warm_explorer_cache,
     warm_ingredient_idf,
 )
-from app.services.explorer_common import (
+from app.services.explorer.common import (
     PANTRY_HARD,
     PANTRY_SOFT,
     normalize_ingredient,
     normalize_many,
 )
-from app.services.explorer_dietary import (
+from app.services.explorer.dietary import (
     compatible_rows,
     dietary_from_payload,
     validate_selected_allowed,
 )
-from app.services.explorer_graph import fetch_ppmi_scores
-from app.services.explorer_ltr import (
+from app.services.explorer.ltr import (
     score_expand_candidates_ltr,
     warm_explorer_ltr_model,
 )
-from app.services.explorer_scoring import (
+from app.services.explorer.scoring import (
     candidate_counts_from_ingredient_sets,
     filter_candidate_counts_by_context,
-    score_expand_candidates,
     score_start_candidates,
 )
-
-EXPAND_PPMI_SHIFT_K = 1.0
-EXPAND_TFIDF_ALPHA = 0.8
-_EXPAND_LOG_K = math.log2(EXPAND_PPMI_SHIFT_K)
 
 
 def _matching_recipes(
@@ -104,21 +97,7 @@ def _score_expand_candidates(
         if ltr_scored is not None:
             return ltr_scored
 
-    return [
-        ExplorerSuggestion(
-            ingredient=ingredient,
-            score=round(score, 6),
-            ppmi_score=round(ppmi_score, 6),
-        )
-        for ingredient, score, ppmi_score in score_expand_candidates(
-            candidate_counts,
-            n_matching,
-            ingredient_idf(),
-            fetch_ppmi_scores(set(candidate_counts), selected),
-            alpha_tfidf=EXPAND_TFIDF_ALPHA,
-            log_k=_EXPAND_LOG_K,
-        )
-    ]
+    return _score_start_candidates(candidate_counts, n_matching)
 
 
 def _upsert_explorer_session(

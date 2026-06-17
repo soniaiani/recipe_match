@@ -7,7 +7,7 @@ from slowapi.util import get_remote_address
 from app.middleware.auth import get_current_user
 from app.models.auth import AuthResponse, DietaryProfile, LoginRequest, RegisterRequest, UserProfile
 from app.models.common import ApiResponse
-from app.services.auth_service import (
+from app.services.auth.service import (
     current_user_profile,
     login_user,
     logout_user,
@@ -36,7 +36,7 @@ async def login(request: Request, body: LoginRequest):
 @router.post("/logout", response_model=ApiResponse[None])
 async def logout(payload: dict = Depends(get_current_user)):
     """Invalidate the current session."""
-    return logout_user()
+    return logout_user(payload)
 
 
 @router.get("/me", response_model=ApiResponse[UserProfile])

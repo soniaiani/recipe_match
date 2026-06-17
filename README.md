@@ -7,7 +7,7 @@ Aplicatia combina mai multe mecanisme de recomandare:
 - un motor Bayesian interactiv in tab-ul `Find`, care pune intrebari adaptive si actualizeaza probabilitatile retetelor dupa fiecare raspuns;
 - reranking semantic cu embeddings pentru situatiile in care utilizatorul ofera un text de tip craving/preferinta;
 - un feed `For You` hibrid, construit din interactiuni, raspunsuri istorice si trasee din Ingredient Explorer;
-- un `Ingredient Explorer` bazat pe co-occurenta, PPMI si IDF pentru a sugera ingrediente compatibile;
+- un `Ingredient Explorer` bazat pe frecventa relativa si un model LTR calibrat pentru a sugera ingrediente compatibile;
 - cautare de retete similare prin `pgvector`.
 
 Scopul proiectului este sa ofere recomandari explicabile si personalizate, nu doar cautare dupa text. Retetele sunt filtrate dupa restrictii alimentare, apoi ordonate prin semnale comportamentale, statistice si semantice.
@@ -484,9 +484,8 @@ Explorer foloseste:
 
 - `recipes.ingredients_clean`;
 - `ingredient_stats`;
-- `ingredient_graph`;
 - cache in memorie pentru randurile retetelor;
-- IDF pentru ingrediente.
+- IDF pentru feature-urile modelului LTR.
 
 La startup:
 
@@ -502,7 +501,7 @@ La startup:
 3. gaseste retetele care il contin;
 4. calculeaza ingrediente candidate din acele retete;
 5. filtreaza ingrediente de pantry;
-6. combina frecventa, IDF si PPMI;
+6. ordoneaza candidatii dupa frecventa relativa;
 7. returneaza top 5 sugestii.
 
 ### Expand
@@ -517,16 +516,17 @@ La startup:
 }
 ```
 
-Backend-ul cauta retete care contin toate ingredientele selectate. Sugestiile noi sunt calculate cu:
+Backend-ul cauta retete care contin toate ingredientele selectate. Pentru minimum
+doua ingrediente selectate, sugestiile sunt ordonate cu modelul LTR calibrat.
+Daca modelul nu este disponibil sau inferenta esueaza, sistemul foloseste
+frecventa relativa:
 
 ```text
 frequency_score = count_in_matching_recipes / number_of_matching_recipes
-tfidf_score = frequency_score * idf
-shifted_ppmi = max(avg_ppmi - log(k), 0)
-final_score = 0.7 * tfidf_score + 0.3 * shifted_ppmi
 ```
 
-Sugestiile sunt sortate descrescator dupa `final_score`.
+Sugestiile sunt sortate descrescator dupa scorul LTR sau, pentru fallback, dupa
+`frequency_score`.
 
 ### Recommend
 
@@ -724,6 +724,9 @@ Creeaza:
 
 `ingredient_stats` contine frecventa fiecarui ingredient.
 
+`ingredient_graph` este pastrat ca artefact istoric al migrarii, dar nu mai este
+folosit de fluxul runtime Ingredient Explorer.
+
 ### `004_explorer_sessions.sql`
 
 Creeaza:
@@ -766,7 +769,7 @@ python scripts\precompute_embeddings.py
 
 Calculeaza embedding pentru fiecare reteta si salveaza in `recipes.embedding`.
 
-### Graf ingrediente
+### Statistici ingrediente istorice
 
 ```powershell
 cd backend
@@ -775,6 +778,8 @@ python scripts\precompute_ingredient_graph.py
 ```
 
 Construieste `ingredient_graph` si `ingredient_stats` din `ingredients_clean`.
+Scriptul este pastrat pentru reproductibilitatea experimentelor istorice;
+aplicatia foloseste la runtime doar `ingredient_stats`.
 
 ### Sensitivity analysis
 

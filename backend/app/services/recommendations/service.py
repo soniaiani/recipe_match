@@ -322,6 +322,20 @@ def record_recipe_interaction(
 
     try:
         admin = get_supabase_admin()
+        if user_id and body.interaction_type in {"save", "cook"}:
+            existing = (
+                admin.table("recipe_interactions")
+                .select("id")
+                .eq("user_id", user_id)
+                .eq("recipe_id", body.recipe_id)
+                .eq("interaction_type", body.interaction_type)
+                .limit(1)
+                .execute()
+                .data
+                or []
+            )
+            if existing:
+                return ApiResponse(data=None)
         admin.table("recipe_interactions").insert({
             "user_id": user_id,
             "recipe_id": body.recipe_id,
@@ -329,6 +343,10 @@ def record_recipe_interaction(
             "weight": _INTERACTION_WEIGHTS[body.interaction_type],
         }).execute()
     except Exception as exc:
+        if body.interaction_type in {"save", "cook"} and any(
+            marker in str(exc).lower() for marker in ("duplicate", "unique")
+        ):
+            return ApiResponse(data=None)
         raise HTTPException(status_code=500, detail=str(exc))
 
     return ApiResponse(data=None)
@@ -357,6 +375,7 @@ def delete_recipe_interaction(
             .eq("interaction_type", interaction_type)
             .execute()
         )
+        admin.table("user_taste_profiles").delete().eq("user_id", user_id).execute()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
