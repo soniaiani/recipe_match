@@ -5,7 +5,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.database import get_supabase_admin
 
 _bearer = HTTPBearer()
-_bearer_optional = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
@@ -33,17 +32,6 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
-
-
-def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_optional),
-) -> dict | None:
-    if credentials is None:
-        return None
-    try:
-        return get_current_user(credentials)
-    except HTTPException:
-        return None
 
 
 def get_user_id(payload: dict = Depends(get_current_user)) -> str:

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 
-from app.middleware.auth import get_current_user_optional
+from app.middleware.auth import get_current_user
 from app.models.common import ApiResponse
 from app.models.recommendations import (
     RecAnswerRequest,
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 async def start_session(
     request: Request,
     body: RecSessionStartRequest | None = None,
-    payload: dict | None = Depends(get_current_user_optional),
+    payload: dict = Depends(get_current_user),
 ):
     """Create a new Bayesian recommendation session and return the first question."""
     return start_recommendation_session(request, body, payload)
@@ -59,7 +59,7 @@ async def get_results(session_id: str, request: Request):
 @router.post("/interaction", response_model=ApiResponse[None])
 async def record_interaction(
     body: RecInteractionRequest,
-    payload: dict | None = Depends(get_current_user_optional),
+    payload: dict = Depends(get_current_user),
 ):
     """Save a recipe interaction (view, save, cook, skip)."""
     return record_recipe_interaction(body, payload)
@@ -69,7 +69,7 @@ async def record_interaction(
 async def delete_interaction(
     recipe_id: int,
     interaction_type: str,
-    payload: dict | None = Depends(get_current_user_optional),
+    payload: dict = Depends(get_current_user),
 ):
     """Delete interactions of a type for the current user and recipe."""
     return delete_recipe_interaction(recipe_id, interaction_type, payload)

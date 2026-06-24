@@ -28,6 +28,7 @@ PROTEIN_TEXT = {
     "beef_pork": "beef or pork",
     "fish_seafood": "fish or seafood",
     "meatless": "meatless",
+    "other_meat": "other meat",
 }
 
 CUISINE_TEXT = {

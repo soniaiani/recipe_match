@@ -2,6 +2,7 @@ from __future__ import annotations
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -13,18 +14,20 @@ settings = get_settings()
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load all recipes and pre-compute MI weights once at startup."""
+    initialize_recommendation_state(app)
+    yield
+
 app = FastAPI(
     title="Recipe Match API",
     version="1.0.0",
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
+    lifespan=lifespan,
 )
 
-
-@app.on_event("startup")
-async def _load_rec_engine() -> None:
-    """Load all recipes and pre-compute MI weights once at startup."""
-    initialize_recommendation_state(app)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

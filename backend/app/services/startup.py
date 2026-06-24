@@ -15,7 +15,7 @@ _REC_RECIPE_FIELDS = (
     "has_pasta,has_rice,has_potato,has_tomato_base,has_cream_base,"
     "has_cheese,has_broth_base,has_mushroom,has_leafy_greens,"
     "has_beans_legumes,has_fruit,has_nuts,has_chocolate,"
-    "has_tortilla,has_spicy_ingredient,has_asian_sauce"
+    "has_asian_sauce"
 )
 
 _FYP_CLUSTER_MODEL_VERSION = "pantry_downweighted_kmeans_hybrid_bool125_pca25_k260_alpha008_seed42_v1"

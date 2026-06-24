@@ -29,7 +29,7 @@ CUISINE_OPTIONS = [
     "american",
     "other",
 ]
-PROTEIN_OPTIONS = ["chicken", "beef_pork", "fish_seafood", "meatless"]
+PROTEIN_OPTIONS = ["chicken", "beef_pork", "fish_seafood", "meatless", "other_meat"]
 MEAL_TYPE_OPTIONS = [
     "appetizer",
     "breakfast",
